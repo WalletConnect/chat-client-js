@@ -15,6 +15,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
     "types": ["vite/client", "node", "jest"]
   },
   "include": ["src"],
