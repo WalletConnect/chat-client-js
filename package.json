@@ -14,6 +14,7 @@
     "dev": "vite --host",
     "build": "tsc && vite build && dts-bundle-generator --config ./dts-bundle-generator.config.ts",
     "test": "jest --runInBand",
+    "test:watch": "jest --runInBand --watch",
     "test:coverage": "jest --runInBand --coverage",
     "lint:scripts": "eslint . --ext .ts",
     "lint:styles": "stylelint ./**/*.{css,scss}",
