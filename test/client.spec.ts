@@ -5,5 +5,6 @@ describe("ChatClient", () => {
     const client = new ChatClient();
     expect(client instanceof ChatClient).toBe(true);
     expect(client.core).toBeDefined();
+    expect(client.events).toBeDefined();
   });
 });
