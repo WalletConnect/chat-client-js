@@ -1,10 +1,9 @@
 import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
+import { Logger } from "pino";
 
-/**
- * Data Types
- */
 export declare namespace ChatClientTypes {
+  // ---------- Data Types ----------------------------------------------- //
   interface Invite {
     message: string;
     account: string;
@@ -28,11 +27,25 @@ export declare namespace ChatClientTypes {
     selfAccount: string;
     peerAccount: string;
   }
+
+  // ---------- Event Types ----------------------------------------------- //
+
+  type Event = "chat_invite" | "chat_joined" | "chat_message" | "chat_left";
+
+  interface BaseEventArgs<T = unknown> {
+    id: number;
+    topic: string;
+    params: T;
+  }
+
+  interface EventArguments {
+    chat_invite: BaseEventArgs<{ id: number; invite: Invite }>;
+    chat_joined: Omit<BaseEventArgs, "params">;
+    chat_message: BaseEventArgs<{ payload: Message }>;
+    chat_left: Omit<BaseEventArgs, "params">;
+  }
 }
 
-/**
- * Abstract Classes
- */
 export abstract class IChatClient {
   public abstract readonly name: string;
 
@@ -99,17 +112,30 @@ export abstract class IChatClient {
     topic: string;
   }): Promise<ChatClientTypes.Message[]>;
 
-  // ---------- Public Events ----------------------------------------------- //
+  // ---------- Event Handlers ----------------------------------------------- //
 
-  //  // subscribe to new chat invites received
-  //  public abstract on("chat_invite", ({ id: number, invite: Invite }) => {}): void;
+  public abstract emit: <E extends ChatClientTypes.Event>(
+    event: E,
+    args: ChatClientTypes.EventArguments[E]
+  ) => boolean;
 
-  //  // subscribe to new chat thread joined
-  //  public abstract on("chat_joined",  ({ topic: string }) => {}): void;
+  public abstract on: <E extends ChatClientTypes.Event>(
+    event: E,
+    listener: (args: ChatClientTypes.EventArguments[E]) => any
+  ) => EventEmitter;
 
-  //  // subscribe to new chat messages received
-  //  public abstract on("chat_message", ({ topic: string, message: string }) => {}): void;
+  public abstract once: <E extends ChatClientTypes.Event>(
+    event: E,
+    listener: (args: ChatClientTypes.EventArguments[E]) => any
+  ) => EventEmitter;
 
-  //  // subscribe to new chat thread left
-  //  public abstract on("chat_left", ({ topic: string }) => {}): void;
+  public abstract off: <E extends ChatClientTypes.Event>(
+    event: E,
+    listener: (args: ChatClientTypes.EventArguments[E]) => any
+  ) => EventEmitter;
+
+  public abstract removeListener: <E extends ChatClientTypes.Event>(
+    event: E,
+    listener: (args: ChatClientTypes.EventArguments[E]) => any
+  ) => EventEmitter;
 }

@@ -65,9 +65,23 @@ export class ChatClient extends IChatClient {
 
   // ---------- Events ----------------------------------------------- //
 
-  // TODO: use stronger typing to restrict listeners to known events
-  public on = this.events.on;
-  public once = this.events.once;
-  public off = this.events.off;
-  public removeListener = this.events.removeListener;
+  public emit: IChatClient["emit"] = (name, listener) => {
+    return this.events.emit(name, listener);
+  };
+
+  public on: IChatClient["on"] = (name, listener) => {
+    return this.events.on(name, listener);
+  };
+
+  public once: IChatClient["once"] = (name, listener) => {
+    return this.events.once(name, listener);
+  };
+
+  public off: IChatClient["off"] = (name, listener) => {
+    return this.events.off(name, listener);
+  };
+
+  public removeListener: IChatClient["removeListener"] = (name, listener) => {
+    return this.events.removeListener(name, listener);
+  };
 }

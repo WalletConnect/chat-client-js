@@ -8,11 +8,15 @@ describe("ChatClient", () => {
     expect(client.events).toBeDefined();
     expect(client.logger).toBeDefined();
 
-    client.events.on("chat_message", () => {
-      console.log("yo");
+    client.on("chat_message", (args) => {
+      console.log("chat_message args were:", args);
     });
-    client.events.emit("chat_message");
-
-    client.logger.info("logger error");
+    client.emit("chat_message", {
+      id: 123,
+      topic: "123abc",
+      params: {
+        payload: { message: "", authorAccount: "0xabc", timestamp: 123 },
+      },
+    });
   });
 });
