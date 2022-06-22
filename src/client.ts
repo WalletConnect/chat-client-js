@@ -1,30 +1,73 @@
 import { Core } from "@walletconnect/core";
+import {
+  generateChildLogger,
+  getDefaultLoggerOptions,
+} from "@walletconnect/logger";
 import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
+import pino from "pino";
 
-export class ChatClient {
+import { IChatClient } from "./types/client";
+
+// @ts-expect-error - still missing some method implementations
+export class ChatClient extends IChatClient {
+  public readonly name = "chatClient";
+
   public core: ICore;
   public events = new EventEmitter();
+  public logger;
 
-  constructor() {
+  constructor(opts?: Record<string, any>) {
+    super(opts);
+
+    const logger =
+      typeof opts?.logger !== "undefined" && typeof opts?.logger !== "string"
+        ? opts.logger
+        : pino(
+            getDefaultLoggerOptions({
+              level: opts?.logger || "error",
+            })
+          );
+
     this.core = new Core();
+    this.logger = generateChildLogger(logger, this.name);
+  }
+
+  // ---------- Public Methods ----------------------------------------------- //
+
+  // TODO: Implement
+  // initializes the client with persisted storage and a network connection
+  public init() {
+    return Promise.resolve();
+  }
+
+  // TODO: Implement
+  // register a blockchain account with a public key / returns the public key
+  public register() {
+    return Promise.resolve("");
+  }
+
+  // TODO: Implement
+  // sends a chat invite to peer account / returns an invite id
+  public invite() {
+    return Promise.resolve(-1);
+  }
+
+  // accepts a chat invite by id / returns thread topic
+  public accept() {
+    return Promise.resolve("");
+  }
+
+  // rejects a chat invite by id
+  public reject() {
+    return Promise.resolve();
   }
 
   // ---------- Events ----------------------------------------------- //
 
-  public on: EventEmitter["on"] = (name, listener) => {
-    return this.events.on(name, listener);
-  };
-
-  public once: EventEmitter["once"] = (name, listener) => {
-    return this.events.once(name, listener);
-  };
-
-  public off: EventEmitter["off"] = (name, listener) => {
-    return this.events.off(name, listener);
-  };
-
-  public removeListener: EventEmitter["removeListener"] = (name, listener) => {
-    return this.events.removeListener(name, listener);
-  };
+  // TODO: use stronger typing to restrict listeners to known events
+  public on = this.events.on;
+  public once = this.events.once;
+  public off = this.events.off;
+  public removeListener = this.events.removeListener;
 }

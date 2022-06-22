@@ -34,8 +34,11 @@ export declare namespace ChatClientTypes {
  * Abstract Classes
  */
 export abstract class IChatClient {
+  public abstract readonly name: string;
+
   public abstract core: ICore;
   public abstract events: EventEmitter;
+  public abstract logger: Logger;
 
   constructor(public opts?: Record<string, any>) {}
 

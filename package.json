@@ -48,6 +48,8 @@
   },
   "dependencies": {
     "@walletconnect/core": "^2.0.0-beta.101",
-    "events": "^3.3.0"
+    "@walletconnect/logger": "^1.0.1",
+    "events": "^3.3.0",
+    "pino": "^8.0.0"
   }
 }
