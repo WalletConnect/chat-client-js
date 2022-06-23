@@ -17,6 +17,13 @@ export class ChatClient extends IChatClient {
   public events = new EventEmitter();
   public logger;
 
+  static async init(opts?: Record<string, any>) {
+    const client = new ChatClient(opts);
+    await client.initialize();
+
+    return client;
+  }
+
   constructor(opts?: Record<string, any>) {
     super(opts);
 
@@ -84,4 +91,18 @@ export class ChatClient extends IChatClient {
   public removeListener: IChatClient["removeListener"] = (name, listener) => {
     return this.events.removeListener(name, listener);
   };
+
+  // ---------- Private ----------------------------------------------- //
+
+  private async initialize() {
+    this.logger.trace(`Initialized`);
+    try {
+      await this.core.start();
+      this.logger.info(`ChatClient Initialization Success`);
+    } catch (error: any) {
+      this.logger.info(`ChatClient Initialization Failure`);
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
 }

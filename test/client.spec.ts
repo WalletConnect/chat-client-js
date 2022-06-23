@@ -1,8 +1,8 @@
 import { ChatClient } from "../src/client";
 
 describe("ChatClient", () => {
-  it("can be instantiated", () => {
-    const client = new ChatClient({ logger: "debug" });
+  it("can be instantiated", async () => {
+    const client = await ChatClient.init({ logger: "debug" });
     expect(client instanceof ChatClient).toBe(true);
     expect(client.core).toBeDefined();
     expect(client.events).toBeDefined();
