@@ -7,10 +7,15 @@ describe("ChatClient", () => {
     expect(client.core).toBeDefined();
     expect(client.events).toBeDefined();
     expect(client.logger).toBeDefined();
+    expect(client.chatMessages).toBeDefined();
 
-    client.on("chat_message", (args) => {
+    client.on("chat_message", async (args) => {
       console.log("chat_message args were:", args);
+      await client.chatMessages.set(args.topic, args.params.payload);
+      const storedMessage = client.chatMessages.get(args.topic);
+      console.log("storedMessage:", storedMessage);
     });
+
     client.emit("chat_message", {
       id: 123,
       topic: "123abc",

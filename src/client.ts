@@ -6,6 +6,7 @@ import {
 import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
 import pino from "pino";
+import { ChatMessages } from "./controllers/chatMessages";
 
 import { IChatClient } from "./types/client";
 
@@ -15,7 +16,8 @@ export class ChatClient extends IChatClient {
 
   public core: ICore;
   public events = new EventEmitter();
-  public logger;
+  public logger: IChatClient["logger"];
+  public chatMessages: IChatClient["chatMessages"];
 
   static async init(opts?: Record<string, any>) {
     const client = new ChatClient(opts);
@@ -38,15 +40,10 @@ export class ChatClient extends IChatClient {
 
     this.core = new Core();
     this.logger = generateChildLogger(logger, this.name);
+    this.chatMessages = new ChatMessages(this.core, this.logger);
   }
 
   // ---------- Public Methods ----------------------------------------------- //
-
-  // TODO: Implement
-  // initializes the client with persisted storage and a network connection
-  public init() {
-    return Promise.resolve();
-  }
 
   // TODO: Implement
   // register a blockchain account with a public key / returns the public key
@@ -98,6 +95,7 @@ export class ChatClient extends IChatClient {
     this.logger.trace(`Initialized`);
     try {
       await this.core.start();
+      await this.chatMessages.init();
       this.logger.info(`ChatClient Initialization Success`);
     } catch (error: any) {
       this.logger.info(`ChatClient Initialization Failure`);

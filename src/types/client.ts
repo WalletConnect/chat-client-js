@@ -1,6 +1,7 @@
 import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "pino";
+import { IChatMessages } from "./chatMessages";
 
 export declare namespace ChatClientTypes {
   // ---------- Data Types ----------------------------------------------- //
@@ -52,12 +53,11 @@ export abstract class IChatClient {
   public abstract core: ICore;
   public abstract events: EventEmitter;
   public abstract logger: Logger;
+  public abstract chatMessages: IChatMessages;
 
   constructor(public opts?: Record<string, any>) {}
 
   // ---------- Public Methods ----------------------------------------------- //
-
-  public abstract init(): Promise<void>;
 
   public abstract register(params: {
     account: string;
