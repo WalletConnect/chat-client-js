@@ -2,6 +2,7 @@ import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "pino";
 import { IChatMessages } from "./chatMessages";
+import { IChatEngine } from "./engine";
 
 export declare namespace ChatClientTypes {
   // ---------- Data Types ----------------------------------------------- //
@@ -54,6 +55,7 @@ export abstract class IChatClient {
   public abstract events: EventEmitter;
   public abstract logger: Logger;
   public abstract chatMessages: IChatMessages;
+  public abstract engine: IChatEngine;
 
   constructor(public opts?: Record<string, any>) {}
 
@@ -81,8 +83,7 @@ export abstract class IChatClient {
   // sends a chat message to an active chat thread
   public abstract message(params: {
     topic: string;
-    message: string;
-    media?: ChatClientTypes.Media;
+    payload: ChatClientTypes.Message;
   }): Promise<void>;
 
   // ping its peer to evaluate if it's currently online

@@ -7,8 +7,9 @@ import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
 import pino from "pino";
 import { ChatMessages } from "./controllers/chatMessages";
+import { ChatEngine } from "./controllers/engine";
 
-import { IChatClient } from "./types/client";
+import { ChatClientTypes, IChatClient, IChatEngine } from "./types";
 
 // @ts-expect-error - still missing some method implementations
 export class ChatClient extends IChatClient {
@@ -18,6 +19,7 @@ export class ChatClient extends IChatClient {
   public events = new EventEmitter();
   public logger: IChatClient["logger"];
   public chatMessages: IChatClient["chatMessages"];
+  public engine: IChatClient["engine"];
 
   static async init(opts?: Record<string, any>) {
     const client = new ChatClient(opts);
@@ -41,6 +43,7 @@ export class ChatClient extends IChatClient {
     this.core = new Core();
     this.logger = generateChildLogger(logger, this.name);
     this.chatMessages = new ChatMessages(this.core, this.logger);
+    this.engine = new ChatEngine(this);
   }
 
   // ---------- Public Methods ----------------------------------------------- //
@@ -66,6 +69,15 @@ export class ChatClient extends IChatClient {
   public reject() {
     return Promise.resolve();
   }
+
+  public message: IChatClient["message"] = async (params) => {
+    try {
+      return await this.engine.sendMessage(params);
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
 
   // ---------- Events ----------------------------------------------- //
 
