@@ -50,12 +50,11 @@ export class ChatEngine extends IChatEngine {
         const { topic, message } = event;
         const payload = this.client.core.crypto.decode(topic, message);
         if (isJsonRpcRequest(payload)) {
-          // TODO: set up history
-          // this.client.history.set(topic, payload);
-          // this.onRelayEventRequest({ topic, payload });
+          this.client.history.set(topic, payload);
+          this.onRelayEventRequest({ topic, payload });
         } else if (isJsonRpcResponse(payload)) {
-          // await this.client.history.resolve(payload);
-          // this.onRelayEventResponse({ topic, payload });
+          await this.client.history.resolve(payload);
+          this.onRelayEventResponse({ topic, payload });
         }
       }
     );
@@ -76,10 +75,21 @@ export class ChatEngine extends IChatEngine {
     }
   };
 
-  protected onRelayEventResponse: IChatEngine["onRelayEventResponse"] = (
+  protected onRelayEventResponse: IChatEngine["onRelayEventResponse"] = async (
     event
   ) => {
-    return Promise.resolve();
+    const { topic, payload } = event;
+    const record = await this.client.history.get(topic, payload.id);
+    const resMethod = record.request.method as JsonRpcTypes.WcMethod;
+
+    switch (resMethod) {
+      case "wc_chatMessage":
+        return this.onSendMessageResponse(topic, payload);
+
+      default:
+        this.client.logger.info(`Unsupported response method ${resMethod}`);
+        return;
+    }
   };
 
   // ---------- Relay Event Handlers ----------------------------------- //
@@ -93,6 +103,17 @@ export class ChatEngine extends IChatEngine {
       // TODO: input validation
       // TODO: effects/mutations (store message, ack received, emit chat_message, ...)
       this.client.emit("chat_message", { id, topic, params });
+    } catch (err) {
+      this.client.logger.error(err);
+    }
+  };
+
+  // TODO: implement
+  protected onSendMessageResponse: any = async (topic: any, payload: any) => {
+    // const { params, id } = payload;
+    try {
+      // TODO: input validation
+      // TODO: effects/mutations (update message status,  emit message_acknowledged event?, ...)
     } catch (err) {
       this.client.logger.error(err);
     }
