@@ -43,7 +43,7 @@ export declare namespace ChatClientTypes {
   interface EventArguments {
     chat_invite: BaseEventArgs<{ id: number; invite: Invite }>;
     chat_joined: Omit<BaseEventArgs, "params">;
-    chat_message: BaseEventArgs<{ payload: Message }>;
+    chat_message: BaseEventArgs<Message>;
     chat_left: Omit<BaseEventArgs, "params">;
   }
 }

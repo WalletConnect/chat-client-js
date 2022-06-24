@@ -11,7 +11,7 @@ describe("ChatClient", () => {
 
     client.on("chat_message", async (args) => {
       console.log("chat_message args were:", args);
-      await client.chatMessages.set(args.topic, args.params.payload);
+      await client.chatMessages.set(args.topic, args.params);
       const storedMessage = client.chatMessages.get(args.topic);
       console.log("storedMessage:", storedMessage);
     });
@@ -19,9 +19,7 @@ describe("ChatClient", () => {
     client.emit("chat_message", {
       id: 123,
       topic: "123abc",
-      params: {
-        payload: { message: "", authorAccount: "0xabc", timestamp: 123 },
-      },
+      params: { message: "", authorAccount: "0xabc", timestamp: 123 },
     });
   });
 });

@@ -1,9 +1,27 @@
+import { RELAYER_EVENTS } from "@walletconnect/core";
+import {
+  isJsonRpcRequest,
+  isJsonRpcResponse,
+} from "@walletconnect/jsonrpc-utils";
+import { RelayerTypes } from "@walletconnect/types";
 import { IChatClient, IChatEngine } from "../types";
+import { JsonRpcTypes } from "../types/jsonrpc";
 
 export class ChatEngine extends IChatEngine {
+  private initialized = false;
+
   constructor(client: IChatClient) {
     super(client);
   }
+
+  public init: IChatEngine["init"] = async () => {
+    if (!this.initialized) {
+      // await this.cleanup();
+      this.registerRelayerEvents();
+      // this.registerExpirerEvents();
+      this.initialized = true;
+    }
+  };
 
   public sendMessage: IChatEngine["sendMessage"] = async ({
     topic,
@@ -20,6 +38,63 @@ export class ChatEngine extends IChatEngine {
       await this.client.chatMessages.update(topic, [...messages, payload]);
     } else {
       await this.client.chatMessages.set(topic, payload);
+    }
+  };
+
+  // ---------- Relay Event Routing ----------------------------------- //
+
+  private registerRelayerEvents() {
+    this.client.core.relayer.on(
+      RELAYER_EVENTS.message,
+      async (event: RelayerTypes.MessageEvent) => {
+        const { topic, message } = event;
+        const payload = this.client.core.crypto.decode(topic, message);
+        if (isJsonRpcRequest(payload)) {
+          // TODO: set up history
+          // this.client.history.set(topic, payload);
+          // this.onRelayEventRequest({ topic, payload });
+        } else if (isJsonRpcResponse(payload)) {
+          // await this.client.history.resolve(payload);
+          // this.onRelayEventResponse({ topic, payload });
+        }
+      }
+    );
+  }
+
+  protected onRelayEventRequest: IChatEngine["onRelayEventRequest"] = (
+    event
+  ) => {
+    const { topic, payload } = event;
+    const reqMethod = payload.method as JsonRpcTypes.WcMethod;
+
+    switch (reqMethod) {
+      case "wc_chatMessage":
+        return this.onReceiveMessage(topic, payload);
+      default:
+        this.client.logger.info(`Unsupported request method ${reqMethod}`);
+        return;
+    }
+  };
+
+  protected onRelayEventResponse: IChatEngine["onRelayEventResponse"] = (
+    event
+  ) => {
+    return Promise.resolve();
+  };
+
+  // ---------- Relay Event Handlers ----------------------------------- //
+
+  protected onReceiveMessage: IChatEngine["onReceiveMessage"] = async (
+    topic,
+    payload
+  ) => {
+    const { params, id } = payload;
+    try {
+      // TODO: input validation
+      // TODO: effects/mutations (store message, ack received, emit chat_message, ...)
+      this.client.emit("chat_message", { id, topic, params });
+    } catch (err) {
+      this.client.logger.error(err);
     }
   };
 }
