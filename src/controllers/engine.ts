@@ -1,5 +1,8 @@
 import { RELAYER_EVENTS } from "@walletconnect/core";
 import {
+  formatJsonRpcError,
+  formatJsonRpcRequest,
+  formatJsonRpcResult,
   isJsonRpcRequest,
   isJsonRpcResponse,
 } from "@walletconnect/jsonrpc-utils";
@@ -29,8 +32,9 @@ export class ChatEngine extends IChatEngine {
   }) => {
     // TODO: Perform validation checks
 
-    // TODO: Send message
-    // await this.sendRequest(topic, "wc_chatMessage", { request, chainId });
+    await this.sendRequest(topic, "wc_chatMessage", { payload });
+
+    // TODO: add `this.events.once` listener for message ack.
 
     // Set message in ChatMessages store, keyed by thread topic T.
     if (this.client.chatMessages.keys.includes(topic)) {
@@ -39,6 +43,39 @@ export class ChatEngine extends IChatEngine {
     } else {
       await this.client.chatMessages.set(topic, payload);
     }
+  };
+
+  // ---------- Protected Helpers --------------------------------------- //
+
+  protected sendRequest: IChatEngine["sendRequest"] = async (
+    topic,
+    method,
+    params
+  ) => {
+    const payload = formatJsonRpcRequest(method, params);
+    const message = this.client.core.crypto.encode(topic, payload);
+    await this.client.core.relayer.publish(topic, message);
+    this.client.history.set(topic, payload);
+
+    return payload.id;
+  };
+
+  protected sendResult: IChatEngine["sendResult"] = async (
+    id,
+    topic,
+    result
+  ) => {
+    const payload = formatJsonRpcResult(id, result);
+    const message = this.client.core.crypto.encode(topic, payload);
+    await this.client.core.relayer.publish(topic, message);
+    await this.client.history.resolve(payload);
+  };
+
+  protected sendError: IChatEngine["sendError"] = async (id, topic, error) => {
+    const payload = formatJsonRpcError(id, error);
+    const message = this.client.core.crypto.encode(topic, payload);
+    await this.client.core.relayer.publish(topic, message);
+    await this.client.history.resolve(payload);
   };
 
   // ---------- Relay Event Routing ----------------------------------- //

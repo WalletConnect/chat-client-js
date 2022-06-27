@@ -1,5 +1,10 @@
-import { JsonRpcRequest, JsonRpcResponse } from "@walletconnect/jsonrpc-utils";
+import {
+  ErrorResponse,
+  JsonRpcRequest,
+  JsonRpcResponse,
+} from "@walletconnect/jsonrpc-utils";
 import { ChatClientTypes, IChatClient } from "./client";
+import { JsonRpcTypes } from "./jsonrpc";
 
 export declare namespace EngineTypes {
   interface EventCallback<T extends JsonRpcRequest | JsonRpcResponse> {
@@ -17,6 +22,28 @@ export abstract class IChatEngine {
     topic: string;
     payload: ChatClientTypes.Message;
   }): Promise<void>;
+
+  // ---------- Protected Helpers --------------------------------------- //
+
+  protected abstract sendRequest<M extends JsonRpcTypes.WcMethod>(
+    topic: string,
+    method: M,
+    // params: JsonRpcTypes.RequestParams[M]
+    params: any
+  ): Promise<number>;
+
+  protected abstract sendResult<M extends JsonRpcTypes.WcMethod>(
+    id: number,
+    topic: string,
+    // result: JsonRpcTypes.Results[M]
+    result: any
+  ): Promise<void>;
+
+  protected abstract sendError(
+    id: number,
+    topic: string,
+    error: ErrorResponse
+  ): Promise<void>;
 
   // ---------- Protected Relay Event Methods ----------------------------------- //
 
