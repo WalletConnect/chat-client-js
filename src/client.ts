@@ -49,24 +49,24 @@ export class ChatClient extends IChatClient {
 
   // ---------- Public Methods ----------------------------------------------- //
 
-  // TODO: Implement
-  // register a blockchain account with a public key / returns the public key
-  public register() {
-    return Promise.resolve("");
-  }
+  public register: IChatClient["register"] = async (params) => {
+    try {
+      return await this.engine.register(params);
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
 
   // TODO: Implement
-  // sends a chat invite to peer account / returns an invite id
   public invite() {
     return Promise.resolve(-1);
   }
 
-  // accepts a chat invite by id / returns thread topic
   public accept() {
     return Promise.resolve("");
   }
 
-  // rejects a chat invite by id
   public reject() {
     return Promise.resolve();
   }

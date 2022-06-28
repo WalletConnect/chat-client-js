@@ -8,18 +8,31 @@ describe("ChatClient", () => {
     expect(client.events).toBeDefined();
     expect(client.logger).toBeDefined();
     expect(client.chatMessages).toBeDefined();
+  });
 
-    client.on("chat_message", async (args) => {
-      console.log("chat_message args were:", args);
-      await client.chatMessages.set(args.topic, args.params);
-      const storedMessage = client.chatMessages.get(args.topic);
-      console.log("storedMessage:", storedMessage);
+  it("can register an account on the keyserver", async () => {
+    const client = await ChatClient.init({ logger: "debug" });
+    const publicKey = await client.register({
+      account: "eip:1:0xf07A0e1454771826472AE22A212575296f309c8C",
     });
 
-    client.emit("chat_message", {
-      id: 123,
+    expect(publicKey.length).toBeGreaterThan(0);
+  });
+
+  it.skip("can send messages", async () => {
+    const client = await ChatClient.init({ logger: "debug" });
+
+    client.on("chat_message", async (args) => {
+      console.log("chat_message event:", args);
+    });
+
+    await client.message({
       topic: "123abc",
-      params: { message: "", authorAccount: "0xabc", timestamp: 123 },
+      payload: {
+        message: "some message",
+        authorAccount: "0xabc",
+        timestamp: 123,
+      },
     });
   });
 });

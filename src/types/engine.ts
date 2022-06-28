@@ -18,6 +18,11 @@ export abstract class IChatEngine {
 
   public abstract init(): Promise<void>;
 
+  public abstract register(params: {
+    account: string;
+    private?: boolean;
+  }): Promise<string>;
+
   public abstract sendMessage(params: {
     topic: string;
     payload: ChatClientTypes.Message;
@@ -32,6 +37,7 @@ export abstract class IChatEngine {
     params: any
   ): Promise<number>;
 
+  // @ts-expect-error - needs Results interface
   protected abstract sendResult<M extends JsonRpcTypes.WcMethod>(
     id: number,
     topic: string,

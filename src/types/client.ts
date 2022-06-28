@@ -62,6 +62,7 @@ export abstract class IChatClient {
 
   // ---------- Public Methods ----------------------------------------------- //
 
+  // register a blockchain account with a public key / returns the public key
   public abstract register(params: {
     account: string;
     private?: boolean;

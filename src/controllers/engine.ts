@@ -8,7 +8,9 @@ import {
 } from "@walletconnect/jsonrpc-utils";
 import { RelayerTypes } from "@walletconnect/types";
 import { createDelayedPromise } from "@walletconnect/utils";
+import axios from "axios";
 import EventEmitter from "events";
+import { KEYSERVER_URL } from "../constants";
 
 import { IChatClient, IChatEngine } from "../types";
 import { JsonRpcTypes } from "../types/jsonrpc";
@@ -29,6 +31,21 @@ export class ChatEngine extends IChatEngine {
       // this.registerExpirerEvents();
       this.initialized = true;
     }
+  };
+
+  public register: IChatEngine["register"] = async ({ account }) => {
+    // TODO: preflight validation (is account already registered?, handle `private` flag param)
+
+    // Generate a publicKey to be associated with this account.
+    const publicKey = await this.client.core.crypto.generateKeyPair();
+
+    // Register on the keyserver via POST request.
+    await axios.post(`http://${KEYSERVER_URL}/register`, {
+      account,
+      publicKey,
+    });
+
+    return publicKey;
   };
 
   public sendMessage: IChatEngine["sendMessage"] = async ({

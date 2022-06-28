@@ -52,6 +52,7 @@
     "@walletconnect/jsonrpc-utils": "^1.0.3",
     "@walletconnect/logger": "^1.0.1",
     "@walletconnect/utils": "^2.0.0-beta.101",
+    "axios": "^0.27.2",
     "events": "^3.3.0",
     "pino": "^8.0.0"
   }
