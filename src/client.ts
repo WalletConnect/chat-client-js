@@ -40,7 +40,7 @@ export class ChatClient extends IChatClient {
             })
           );
 
-    this.core = new Core();
+    this.core = new Core(opts);
     this.logger = generateChildLogger(logger, this.name);
     this.chatMessages = new ChatMessages(this.core, this.logger);
     this.history = new JsonRpcHistory(this.core, this.logger);
