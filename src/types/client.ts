@@ -1,7 +1,9 @@
 import { ICore, IJsonRpcHistory } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "pino";
+import { IChatInvites } from "./chatInvites";
 import { IChatMessages } from "./chatMessages";
+import { IChatThreads } from "./chatThreads";
 import { IChatEngine } from "./engine";
 
 export declare namespace ChatClientTypes {
@@ -54,6 +56,8 @@ export abstract class IChatClient {
   public abstract core: ICore;
   public abstract events: EventEmitter;
   public abstract logger: Logger;
+  public abstract chatInvites: IChatInvites;
+  public abstract chatThreads: IChatThreads;
   public abstract chatMessages: IChatMessages;
   public abstract engine: IChatEngine;
   public abstract history: IJsonRpcHistory;
