@@ -7,11 +7,16 @@ import {
   isJsonRpcResponse,
 } from "@walletconnect/jsonrpc-utils";
 import { RelayerTypes } from "@walletconnect/types";
+import { createDelayedPromise } from "@walletconnect/utils";
+import EventEmitter from "events";
+
 import { IChatClient, IChatEngine } from "../types";
 import { JsonRpcTypes } from "../types/jsonrpc";
+import { engineEvent } from "../utils/engineUtil";
 
 export class ChatEngine extends IChatEngine {
   private initialized = false;
+  private events = new EventEmitter();
 
   constructor(client: IChatClient) {
     super(client);
@@ -32,9 +37,18 @@ export class ChatEngine extends IChatEngine {
   }) => {
     // TODO: Perform validation checks
 
-    await this.sendRequest(topic, "wc_chatMessage", { payload });
+    const id = await this.sendRequest(topic, "wc_chatMessage", { payload });
 
-    // TODO: add `this.events.once` listener for message ack.
+    const {
+      done: acknowledged,
+      resolve,
+      reject,
+    } = createDelayedPromise<void>();
+    this.events.once(engineEvent("chat_message", id), ({ error }) => {
+      if (error) reject(error);
+      else resolve();
+    });
+    await acknowledged();
 
     // Set message in ChatMessages store, keyed by thread topic T.
     if (this.client.chatMessages.keys.includes(topic)) {
@@ -139,14 +153,16 @@ export class ChatEngine extends IChatEngine {
     try {
       // TODO: input validation
       // TODO: effects/mutations (store message, ack received, emit chat_message, ...)
+      await this.sendResult<"wc_chatMessage">(payload.id, topic, true);
       this.client.emit("chat_message", { id, topic, params });
-    } catch (err) {
+    } catch (err: any) {
+      await this.sendError(id, topic, err);
       this.client.logger.error(err);
     }
   };
 
   // TODO: implement
-  protected onSendMessageResponse: any = async (topic: any, payload: any) => {
+  protected onSendMessageResponse: any = async (_topic: any, _payload: any) => {
     // const { params, id } = payload;
     try {
       // TODO: input validation
