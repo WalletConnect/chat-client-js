@@ -58,6 +58,15 @@ export class ChatClient extends IChatClient {
     }
   };
 
+  public resolve: IChatClient["resolve"] = async (params) => {
+    try {
+      return await this.engine.resolve(params);
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
   // TODO: Implement
   public invite() {
     return Promise.resolve(-1);

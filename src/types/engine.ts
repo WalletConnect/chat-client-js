@@ -23,6 +23,8 @@ export abstract class IChatEngine {
     private?: boolean;
   }): Promise<string>;
 
+  public abstract resolve(params: { account: string }): Promise<string>;
+
   public abstract sendMessage(params: {
     topic: string;
     payload: ChatClientTypes.Message;

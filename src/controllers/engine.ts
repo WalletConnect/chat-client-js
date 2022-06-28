@@ -34,7 +34,7 @@ export class ChatEngine extends IChatEngine {
   };
 
   public register: IChatEngine["register"] = async ({ account }) => {
-    // TODO: preflight validation (is account already registered?, handle `private` flag param)
+    // TODO: preflight validation (is valid account, is account already registered, handle `private` flag param)
 
     // Generate a publicKey to be associated with this account.
     const publicKey = await this.client.core.crypto.generateKeyPair();
@@ -44,6 +44,18 @@ export class ChatEngine extends IChatEngine {
       account,
       publicKey,
     });
+
+    return publicKey;
+  };
+
+  public resolve: IChatEngine["resolve"] = async ({ account }) => {
+    // TODO: preflight validation (is valid account, ...)
+
+    // Resolve the publicKey for the given account via keyserver.
+    const { data } = await axios.get(
+      `http://${KEYSERVER_URL}/resolve?account=${account}`
+    );
+    const { publicKey } = data;
 
     return publicKey;
   };
