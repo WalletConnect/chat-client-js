@@ -109,6 +109,8 @@ export class ChatClient extends IChatClient {
     try {
       await this.core.start();
       await this.chatMessages.init();
+      await this.history.init();
+      await this.engine.init();
       this.logger.info(`ChatClient Initialization Success`);
     } catch (error: any) {
       this.logger.info(`ChatClient Initialization Failure`);
