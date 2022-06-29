@@ -1,7 +1,9 @@
 import {
   ErrorResponse,
+  JsonRpcError,
   JsonRpcRequest,
   JsonRpcResponse,
+  JsonRpcResult,
 } from "@walletconnect/jsonrpc-utils";
 import { ChatClientTypes, IChatClient } from "./client";
 import { JsonRpcTypes } from "./jsonrpc";
@@ -53,6 +55,11 @@ export abstract class IChatEngine {
     error: ErrorResponse
   ): Promise<void>;
 
+  protected abstract setMessage(
+    topic: string,
+    item: ChatClientTypes.Message
+  ): Promise<void>;
+
   // ---------- Protected Relay Event Methods ----------------------------------- //
 
   protected abstract onRelayEventRequest(
@@ -63,8 +70,13 @@ export abstract class IChatEngine {
     event: EngineTypes.EventCallback<JsonRpcResponse>
   ): Promise<void>;
 
-  protected abstract onReceiveMessage(
+  protected abstract onIncomingMessage(
     topic: string,
     payload: JsonRpcRequest<ChatClientTypes.Message>
   ): Promise<void>;
+
+  protected abstract onSendMessageResponse(
+    topic: string,
+    payload: JsonRpcResult<true> | JsonRpcError
+  ): void;
 }

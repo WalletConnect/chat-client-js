@@ -3,8 +3,10 @@ import {
   formatJsonRpcError,
   formatJsonRpcRequest,
   formatJsonRpcResult,
+  isJsonRpcError,
   isJsonRpcRequest,
   isJsonRpcResponse,
+  isJsonRpcResult,
 } from "@walletconnect/jsonrpc-utils";
 import { RelayerTypes } from "@walletconnect/types";
 import { createDelayedPromise } from "@walletconnect/utils";
@@ -64,9 +66,9 @@ export class ChatEngine extends IChatEngine {
     topic,
     payload,
   }) => {
-    // TODO: Perform validation checks
+    // TODO: preflight validation (is valid message, ...)
 
-    const id = await this.sendRequest(topic, "wc_chatMessage", { payload });
+    const id = await this.sendRequest(topic, "wc_chatMessage", payload);
 
     const {
       done: acknowledged,
@@ -80,12 +82,7 @@ export class ChatEngine extends IChatEngine {
     await acknowledged();
 
     // Set message in ChatMessages store, keyed by thread topic T.
-    if (this.client.chatMessages.keys.includes(topic)) {
-      const messages = this.client.chatMessages.get(topic);
-      await this.client.chatMessages.update(topic, [...messages, payload]);
-    } else {
-      await this.client.chatMessages.set(topic, payload);
-    }
+    this.setMessage(topic, payload);
   };
 
   // ---------- Protected Helpers --------------------------------------- //
@@ -121,6 +118,16 @@ export class ChatEngine extends IChatEngine {
     await this.client.history.resolve(payload);
   };
 
+  protected setMessage: IChatEngine["setMessage"] = async (topic, item) => {
+    if (this.client.chatMessages.keys.includes(topic)) {
+      const current = this.client.chatMessages.get(topic);
+      const messages = [...current.messages, item];
+      await this.client.chatMessages.update(topic, { messages });
+    } else {
+      await this.client.chatMessages.set(topic, { messages: [item] });
+    }
+  };
+
   // ---------- Relay Event Routing ----------------------------------- //
 
   private registerRelayerEvents() {
@@ -148,7 +155,7 @@ export class ChatEngine extends IChatEngine {
 
     switch (reqMethod) {
       case "wc_chatMessage":
-        return this.onReceiveMessage(topic, payload);
+        return this.onIncomingMessage(topic, payload);
       default:
         this.client.logger.info(`Unsupported request method ${reqMethod}`);
         return;
@@ -174,14 +181,14 @@ export class ChatEngine extends IChatEngine {
 
   // ---------- Relay Event Handlers ----------------------------------- //
 
-  protected onReceiveMessage: IChatEngine["onReceiveMessage"] = async (
+  protected onIncomingMessage: IChatEngine["onIncomingMessage"] = async (
     topic,
     payload
   ) => {
     const { params, id } = payload;
     try {
       // TODO: input validation
-      // TODO: effects/mutations (store message, ack received, emit chat_message, ...)
+      this.setMessage(topic, params);
       await this.sendResult<"wc_chatMessage">(payload.id, topic, true);
       this.client.emit("chat_message", { id, topic, params });
     } catch (err: any) {
@@ -190,14 +197,15 @@ export class ChatEngine extends IChatEngine {
     }
   };
 
-  // TODO: implement
-  protected onSendMessageResponse: any = async (_topic: any, _payload: any) => {
-    // const { params, id } = payload;
-    try {
-      // TODO: input validation
-      // TODO: effects/mutations (update message status,  emit message_acknowledged event?, ...)
-    } catch (err) {
-      this.client.logger.error(err);
-    }
-  };
+  protected onSendMessageResponse: IChatEngine["onSendMessageResponse"] =
+    async (_topic, payload) => {
+      const { id } = payload;
+      if (isJsonRpcResult(payload)) {
+        this.events.emit(engineEvent("chat_message", id), {});
+      } else if (isJsonRpcError(payload)) {
+        this.events.emit(engineEvent("chat_message", id), {
+          error: payload.error,
+        });
+      }
+    };
 }
