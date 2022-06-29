@@ -52,12 +52,15 @@ describe("ChatClient", () => {
   });
 
   it("can send & receive messages", async () => {
-    const topic = generateRandomBytes32();
+    const symKey = generateRandomBytes32();
     const payload = {
       message: "some message",
       authorAccount: "0xabc",
       timestamp: 123,
     };
+
+    await client.core.crypto.setSymKey(symKey);
+    const topic = await peer.core.crypto.setSymKey(symKey);
 
     // Manually subscribe to the fake thread topic for now.
     await client.core.relayer.subscribe(topic);

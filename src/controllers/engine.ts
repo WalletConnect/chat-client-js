@@ -93,7 +93,7 @@ export class ChatEngine extends IChatEngine {
     params
   ) => {
     const payload = formatJsonRpcRequest(method, params);
-    const message = this.client.core.crypto.encode(topic, payload);
+    const message = await this.client.core.crypto.encode(topic, payload);
     await this.client.core.relayer.publish(topic, message);
     this.client.history.set(topic, payload);
 
@@ -106,14 +106,14 @@ export class ChatEngine extends IChatEngine {
     result
   ) => {
     const payload = formatJsonRpcResult(id, result);
-    const message = this.client.core.crypto.encode(topic, payload);
+    const message = await this.client.core.crypto.encode(topic, payload);
     await this.client.core.relayer.publish(topic, message);
     await this.client.history.resolve(payload);
   };
 
   protected sendError: IChatEngine["sendError"] = async (id, topic, error) => {
     const payload = formatJsonRpcError(id, error);
-    const message = this.client.core.crypto.encode(topic, payload);
+    const message = await this.client.core.crypto.encode(topic, payload);
     await this.client.core.relayer.publish(topic, message);
     await this.client.history.resolve(payload);
   };
@@ -135,7 +135,7 @@ export class ChatEngine extends IChatEngine {
       RELAYER_EVENTS.message,
       async (event: RelayerTypes.MessageEvent) => {
         const { topic, message } = event;
-        const payload = this.client.core.crypto.decode(topic, message);
+        const payload = await this.client.core.crypto.decode(topic, message);
         if (isJsonRpcRequest(payload)) {
           this.client.history.set(topic, payload);
           this.onRelayEventRequest({ topic, payload });
