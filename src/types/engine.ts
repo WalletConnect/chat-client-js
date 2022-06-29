@@ -5,6 +5,7 @@ import {
   JsonRpcResponse,
   JsonRpcResult,
 } from "@walletconnect/jsonrpc-utils";
+import { CryptoTypes } from "@walletconnect/types";
 import { ChatClientTypes, IChatClient } from "./client";
 import { JsonRpcTypes } from "./jsonrpc";
 
@@ -38,7 +39,8 @@ export abstract class IChatEngine {
     topic: string,
     method: M,
     // params: JsonRpcTypes.RequestParams[M]
-    params: any
+    params: any,
+    opts?: CryptoTypes.EncodeOptions
   ): Promise<number>;
 
   // @ts-expect-error - needs Results interface
@@ -46,13 +48,15 @@ export abstract class IChatEngine {
     id: number,
     topic: string,
     // result: JsonRpcTypes.Results[M]
-    result: any
+    result: any,
+    opts?: CryptoTypes.EncodeOptions
   ): Promise<void>;
 
   protected abstract sendError(
     id: number,
     topic: string,
-    error: ErrorResponse
+    error: ErrorResponse,
+    opts?: CryptoTypes.EncodeOptions
   ): Promise<void>;
 
   protected abstract setMessage(

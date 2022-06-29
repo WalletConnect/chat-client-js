@@ -90,10 +90,11 @@ export class ChatEngine extends IChatEngine {
   protected sendRequest: IChatEngine["sendRequest"] = async (
     topic,
     method,
-    params
+    params,
+    opts
   ) => {
     const payload = formatJsonRpcRequest(method, params);
-    const message = await this.client.core.crypto.encode(topic, payload);
+    const message = await this.client.core.crypto.encode(topic, payload, opts);
     await this.client.core.relayer.publish(topic, message);
     this.client.history.set(topic, payload);
 
@@ -103,17 +104,23 @@ export class ChatEngine extends IChatEngine {
   protected sendResult: IChatEngine["sendResult"] = async (
     id,
     topic,
-    result
+    result,
+    opts
   ) => {
     const payload = formatJsonRpcResult(id, result);
-    const message = await this.client.core.crypto.encode(topic, payload);
+    const message = await this.client.core.crypto.encode(topic, payload, opts);
     await this.client.core.relayer.publish(topic, message);
     await this.client.history.resolve(payload);
   };
 
-  protected sendError: IChatEngine["sendError"] = async (id, topic, error) => {
+  protected sendError: IChatEngine["sendError"] = async (
+    id,
+    topic,
+    error,
+    opts
+  ) => {
     const payload = formatJsonRpcError(id, error);
-    const message = await this.client.core.crypto.encode(topic, payload);
+    const message = await this.client.core.crypto.encode(topic, payload, opts);
     await this.client.core.relayer.publish(topic, message);
     await this.client.history.resolve(payload);
   };
