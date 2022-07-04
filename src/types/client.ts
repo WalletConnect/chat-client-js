@@ -11,6 +11,7 @@ export declare namespace ChatClientTypes {
   interface Invite {
     message: string;
     account: string;
+    publicKey: string;
     signature?: string;
   }
 
