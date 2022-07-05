@@ -1,7 +1,9 @@
 import { generateRandomBytes32 } from "@walletconnect/utils";
 import { ChatClient } from "../src/client";
+import { ChatClientTypes } from "../src/types";
 
-const TEST_ACCOUNT = "eip:1:0xf07A0e1454771826472AE22A212575296f309c8C";
+const TEST_CLIENT_ACCOUNT = "eip:1:0xf07A0e1454771826472AE22A212575296f309c8C";
+const TEST_PEER_ACCOUNT = "eip:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
 
 describe("ChatClient", () => {
   let client: ChatClient;
@@ -37,7 +39,7 @@ describe("ChatClient", () => {
 
   it.skip("can register an account on the keyserver", async () => {
     const publicKey = await client.register({
-      account: TEST_ACCOUNT,
+      account: TEST_CLIENT_ACCOUNT,
     });
 
     expect(publicKey.length).toBeGreaterThan(0);
@@ -45,10 +47,37 @@ describe("ChatClient", () => {
 
   it.skip("can resolve an account on the keyserver", async () => {
     const publicKey = await client.resolve({
-      account: TEST_ACCOUNT,
+      account: TEST_CLIENT_ACCOUNT,
     });
 
     expect(publicKey.length).toBeGreaterThan(0);
+  });
+
+  it.only("can send & receive invites", async () => {
+    const peerInvitePublicKey = await peer.register({
+      account: TEST_PEER_ACCOUNT,
+    });
+
+    client.resolve = jest.fn(() => Promise.resolve(peerInvitePublicKey));
+
+    peer.on("chat_invite", async (args) => {
+      const { id } = args;
+      console.log("chat_invite:", args);
+      const chatThreadTopic = await peer.accept({ id });
+      expect(chatThreadTopic).toBeDefined();
+    });
+
+    const invite: ChatClientTypes.PartialInvite = {
+      message: "hey let's chat",
+      account: TEST_CLIENT_ACCOUNT,
+    };
+
+    const inviteId = await client.invite({
+      account: TEST_PEER_ACCOUNT,
+      invite,
+    });
+
+    expect(inviteId).toBeDefined();
   });
 
   it("can send & receive messages", async () => {
@@ -58,6 +87,7 @@ describe("ChatClient", () => {
       authorAccount: "0xabc",
       timestamp: 123,
     };
+    let eventCount = 0;
 
     await client.core.crypto.setSymKey(symKey);
     const topic = await peer.core.crypto.setSymKey(symKey);
@@ -66,8 +96,8 @@ describe("ChatClient", () => {
     await client.core.relayer.subscribe(topic);
     await peer.core.relayer.subscribe(topic);
 
-    peer.on("chat_message", async (args) => {
-      console.log("chat_message event:", args);
+    peer.on("chat_message", async () => {
+      eventCount++;
     });
 
     await client.message({
@@ -93,5 +123,6 @@ describe("ChatClient", () => {
     expect(peer.chatMessages.get(topic)).toEqual({
       messages: [payload, payload],
     });
+    expect(eventCount).toBe(2);
   });
 });

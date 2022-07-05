@@ -123,7 +123,8 @@ export class JsonRpcHistory extends IJsonRpcHistory {
     this.logger.debug(`Getting record`);
     this.logger.trace({ type: "method", method: "get", topic, id });
     const record = await this.getRecord(id);
-    if (record.topic !== topic) {
+    // NOTE: making an exception here for `wc_chatInvite` since invite response topic !== invite request topic.
+    if (record.topic !== topic && record.request.method !== "wc_chatInvite") {
       const { message } = getInternalError(
         "MISMATCHED_TOPIC",
         `${this.name}, ${id}`

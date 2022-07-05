@@ -1,4 +1,4 @@
-import { ICore, IJsonRpcHistory } from "@walletconnect/types";
+import { ICore, IJsonRpcHistory, IStore } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "pino";
 import { IChatInvites } from "./chatInvites";
@@ -8,11 +8,14 @@ import { IChatEngine } from "./engine";
 
 export declare namespace ChatClientTypes {
   // ---------- Data Types ----------------------------------------------- //
-  interface Invite {
+  interface PartialInvite {
     message: string;
     account: string;
-    publicKey: string;
     signature?: string;
+  }
+
+  interface Invite extends PartialInvite {
+    publicKey: string;
   }
 
   interface Media {
@@ -44,7 +47,7 @@ export declare namespace ChatClientTypes {
   }
 
   interface EventArguments {
-    chat_invite: BaseEventArgs<{ id: number; invite: Invite }>;
+    chat_invite: BaseEventArgs<Invite>;
     chat_joined: Omit<BaseEventArgs, "params">;
     chat_message: BaseEventArgs<Message>;
     chat_left: Omit<BaseEventArgs, "params">;
@@ -60,6 +63,7 @@ export abstract class IChatClient {
   public abstract chatInvites: IChatInvites;
   public abstract chatThreads: IChatThreads;
   public abstract chatMessages: IChatMessages;
+  public abstract chatKeys: IStore<string, any>;
   public abstract engine: IChatEngine;
   public abstract history: IJsonRpcHistory;
 
@@ -78,14 +82,14 @@ export abstract class IChatClient {
   // sends a chat invite to peer account / returns an invite id
   public abstract invite(params: {
     account: string;
-    invite: ChatClientTypes.Invite;
+    invite: ChatClientTypes.PartialInvite;
   }): Promise<number>;
 
   // accepts a chat invite by id / returns thread topic
-  public abstract accept(params: { inviteId: string }): Promise<string>;
+  public abstract accept(params: { id: number }): Promise<string>;
 
   // rejects a chat invite by id
-  public abstract reject(params: { inviteId: string }): Promise<void>;
+  public abstract reject(params: { id: number }): Promise<void>;
 
   // sends a chat message to an active chat thread
   public abstract message(params: {

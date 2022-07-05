@@ -14,6 +14,7 @@ import {
   ChatInvites,
   ChatThreads,
 } from "./controllers";
+import { ChatKeys } from "./controllers/chatKeys";
 import { IChatClient } from "./types";
 
 // @ts-expect-error - still missing some method implementations
@@ -26,6 +27,7 @@ export class ChatClient extends IChatClient {
   public chatInvites: IChatClient["chatInvites"];
   public chatThreads: IChatClient["chatThreads"];
   public chatMessages: IChatClient["chatMessages"];
+  public chatKeys: IChatClient["chatKeys"];
   public engine: IChatClient["engine"];
   public history: IChatClient["history"];
 
@@ -48,11 +50,13 @@ export class ChatClient extends IChatClient {
             })
           );
 
+    // @ts-expect-error - debug type override
     this.core = new Core(opts);
     this.logger = generateChildLogger(logger, this.name);
     this.chatInvites = new ChatInvites(this.core, this.logger);
     this.chatThreads = new ChatThreads(this.core, this.logger);
     this.chatMessages = new ChatMessages(this.core, this.logger);
+    this.chatKeys = new ChatKeys(this.core, this.logger);
     this.history = new JsonRpcHistory(this.core, this.logger);
     this.engine = new ChatEngine(this);
   }
@@ -77,14 +81,23 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  // TODO: Implement
-  public invite() {
-    return Promise.resolve(-1);
-  }
+  public invite: IChatClient["invite"] = async (params) => {
+    try {
+      return await this.engine.invite(params);
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
 
-  public accept() {
-    return Promise.resolve("");
-  }
+  public accept: IChatClient["accept"] = async (params) => {
+    try {
+      return await this.engine.accept(params);
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
 
   public reject() {
     return Promise.resolve();
@@ -130,6 +143,7 @@ export class ChatClient extends IChatClient {
       await this.chatInvites.init();
       await this.chatThreads.init();
       await this.chatMessages.init();
+      await this.chatKeys.init();
       await this.history.init();
       await this.engine.init();
       this.logger.info(`ChatClient Initialization Success`);

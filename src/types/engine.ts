@@ -28,6 +28,13 @@ export abstract class IChatEngine {
 
   public abstract resolve(params: { account: string }): Promise<string>;
 
+  public abstract invite(params: {
+    account: string;
+    invite: ChatClientTypes.PartialInvite;
+  }): Promise<number>;
+
+  public abstract accept(params: { id: number }): Promise<string>;
+
   public abstract sendMessage(params: {
     topic: string;
     payload: ChatClientTypes.Message;
@@ -73,6 +80,16 @@ export abstract class IChatEngine {
   protected abstract onRelayEventResponse(
     event: EngineTypes.EventCallback<JsonRpcResponse>
   ): Promise<void>;
+
+  protected abstract onIncomingInvite(
+    topic: string,
+    payload: JsonRpcRequest<ChatClientTypes.Invite>
+  ): Promise<void>;
+
+  protected abstract onInviteResponse(
+    topic: string,
+    payload: JsonRpcResult<{ publicKeyZ: string }> | JsonRpcError
+  ): void;
 
   protected abstract onIncomingMessage(
     topic: string,
