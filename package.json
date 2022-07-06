@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "main": "./dist/chat-client.cjs",
   "module": "./dist/chat-client.mjs",
+  "types": "./dist/chat-client.d.ts",
   "exports": {
     ".": {
       "require": "./dist/chat-client.cjs",

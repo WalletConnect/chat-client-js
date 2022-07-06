@@ -1,5 +1,5 @@
 const getPackageName = () => {
-  return "walletconnect-chat-client";
+  return "chat-client";
 };
 
 const config = {
