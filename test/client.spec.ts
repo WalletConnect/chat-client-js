@@ -2,8 +2,9 @@ import { generateRandomBytes32 } from "@walletconnect/utils";
 import { ChatClient } from "../src/client";
 import { ChatClientTypes } from "../src/types";
 
-const TEST_CLIENT_ACCOUNT = "eip:1:0xf07A0e1454771826472AE22A212575296f309c8C";
-const TEST_PEER_ACCOUNT = "eip:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
+const TEST_CLIENT_ACCOUNT =
+  "eip155:1:0xf07A0e1454771826472AE22A212575296f309c8C";
+const TEST_PEER_ACCOUNT = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
 
 describe("ChatClient", () => {
   let client: ChatClient;
@@ -53,7 +54,7 @@ describe("ChatClient", () => {
     expect(publicKey.length).toBeGreaterThan(0);
   });
 
-  it.only("can send & receive invites", async () => {
+  it("can send & receive invites", async () => {
     const peerInvitePublicKey = await peer.register({
       account: TEST_PEER_ACCOUNT,
     });
