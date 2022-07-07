@@ -29,7 +29,6 @@ export class ChatEngine extends IChatEngine {
     super(client);
   }
 
-  // TODO: subscribe to own inviteTopic on init to listen to invites.
   public init: IChatEngine["init"] = async () => {
     if (!this.initialized) {
       // await this.cleanup();
@@ -168,7 +167,7 @@ export class ChatEngine extends IChatEngine {
     // Thread topic is derived as the hash of the symKey T.
     const chatThreadTopic = hashKey(symKeyT);
 
-    // TODO: B sends response with publicKey Z on response topic encrypted with type 0 envelope.
+    // B sends response with publicKey Z on response topic encrypted with type 0 envelope.
     await this.sendResult<"wc_chatInvite">(id, responseTopic, { publicKeyZ });
 
     // Subscribe to the chat thread topic.
