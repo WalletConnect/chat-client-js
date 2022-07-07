@@ -48,7 +48,9 @@ export class ChatEngine extends IChatEngine {
     // Generate a publicKey to be associated with this account.
     const publicKey = await this.client.core.crypto.generateKeyPair();
 
-    await this.client.chatKeys.set(SELF_INVITE_PUBLIC_KEY_NAME, publicKey);
+    await this.client.chatKeys.set(SELF_INVITE_PUBLIC_KEY_NAME, {
+      publicKey,
+    });
 
     // Register on the keyserver via POST request.
     await axios.post(`http://${KEYSERVER_URL}/register`, {
@@ -82,9 +84,13 @@ export class ChatEngine extends IChatEngine {
     const proposerInvitePublicKey =
       await this.client.core.crypto.generateKeyPair();
 
-    await this.client.chatKeys.set(
-      INVITE_PROPOSER_PUBLIC_KEY_NAME,
-      proposerInvitePublicKey
+    await this.client.chatKeys.set(INVITE_PROPOSER_PUBLIC_KEY_NAME, {
+      publicKey: proposerInvitePublicKey,
+    });
+
+    console.log(
+      "INVITE_PROPOSER_PUBLIC_KEY:",
+      this.client.chatKeys.get(INVITE_PROPOSER_PUBLIC_KEY_NAME)
     );
 
     // invite topic is derived as the hash of the publicKey X.
@@ -132,7 +138,7 @@ export class ChatEngine extends IChatEngine {
     // NOTE: This is a very roundabout way to get back to symKey I by re-deriving,
     // since crypto.decode doesn't expose it.
     // Can we simplify this?
-    const selfInvitePublicKey = this.client.chatKeys.get(
+    const { publicKey: selfInvitePublicKey } = this.client.chatKeys.get(
       SELF_INVITE_PUBLIC_KEY_NAME
     );
     console.log(
@@ -236,9 +242,11 @@ export class ChatEngine extends IChatEngine {
   };
 
   protected subscribeToSelfInviteTopic = async () => {
-    const selfInvitePublicKey = this.client.chatKeys.get(
+    const { publicKey: selfInvitePublicKey } = this.client.chatKeys.get(
       SELF_INVITE_PUBLIC_KEY_NAME
     );
+    console.log(">>>>>>>>> selfInvitePublicKey:", selfInvitePublicKey);
+
     const selfInviteTopic = hashKey(selfInvitePublicKey);
     await this.client.core.relayer.subscribe(selfInviteTopic);
   };
@@ -260,13 +268,17 @@ export class ChatEngine extends IChatEngine {
       RELAYER_EVENTS.message,
       async (event: RelayerTypes.MessageEvent) => {
         const { topic, message } = event;
-        const receiverPublicKey = this.client.chatKeys.keys.includes(
+        const selfInvitePublicKeyEntry = this.client.chatKeys.keys.includes(
           SELF_INVITE_PUBLIC_KEY_NAME
         )
           ? this.client.chatKeys.get(SELF_INVITE_PUBLIC_KEY_NAME)
-          : undefined;
+          : {};
+        console.log(
+          ">>>>>>> receiverPublicKey: ",
+          selfInvitePublicKeyEntry.publicKey
+        );
         const payload = await this.client.core.crypto.decode(topic, message, {
-          receiverPublicKey,
+          receiverPublicKey: selfInvitePublicKeyEntry.publicKey,
         });
         if (isJsonRpcRequest(payload)) {
           this.client.history.set(topic, payload);
@@ -348,7 +360,7 @@ export class ChatEngine extends IChatEngine {
     if (isJsonRpcResult(payload)) {
       // TODO: needed? Retrieve sent invite via payload id and mark as accepted.
 
-      const inviteProposerPublicKey = this.client.chatKeys.get(
+      const { publicKey: inviteProposerPublicKey } = this.client.chatKeys.get(
         INVITE_PROPOSER_PUBLIC_KEY_NAME
       );
       const topicSymKeyT = await this.client.core.crypto.generateSharedKey(

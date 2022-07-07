@@ -42,16 +42,24 @@ describe("ChatClient", () => {
     const publicKey = await client.register({
       account: TEST_CLIENT_ACCOUNT,
     });
-
-    expect(publicKey.length).toBeGreaterThan(0);
-  });
-
-  it.skip("can resolve an account on the keyserver", async () => {
-    const publicKey = await client.resolve({
-      account: TEST_CLIENT_ACCOUNT,
+    const peerPublicKey = await peer.register({
+      account: TEST_PEER_ACCOUNT,
     });
 
     expect(publicKey.length).toBeGreaterThan(0);
+    expect(peerPublicKey.length).toBeGreaterThan(0);
+  });
+
+  it.skip("can resolve an account on the keyserver", async () => {
+    const publicKey = await peer.resolve({
+      account: TEST_CLIENT_ACCOUNT,
+    });
+    const peerPublicKey = await client.resolve({
+      account: TEST_PEER_ACCOUNT,
+    });
+
+    expect(publicKey.length).toBeGreaterThan(0);
+    expect(peerPublicKey.length).toBeGreaterThan(0);
   });
 
   it("can send & receive invites", async () => {
