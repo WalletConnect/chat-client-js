@@ -8,11 +8,9 @@ import {
 
 // FIXME: `StoreStruct` is opinionated towards SignClient data types -> make it agnostic.
 // StoreStruct = SessionTypes.Struct | PairingTypes.Struct | ProposalTypes.Struct;
-// @ts-expect-error - debugging extension of core
 export class ChatThreadsPending extends Store<string, any> {
   constructor(public core: ICore, public logger: Logger) {
     super(
-      // @ts-expect-error - debugging extension of core
       core,
       logger,
       CHAT_THREADS_PENDING_CONTEXT,

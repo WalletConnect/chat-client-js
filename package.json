@@ -31,7 +31,7 @@
     "@typescript-eslint/eslint-plugin": "^5.16.0",
     "@typescript-eslint/parser": "^5.16.0",
     "@walletconnect/jsonrpc-types": "^1.0.1",
-    "@walletconnect/types": "^2.0.0-beta.101.1",
+    "@walletconnect/types": "^2.0.0-beta.102",
     "better-sqlite3": "^7.5.3",
     "dts-bundle-generator": "^6.5.0",
     "eslint": "^8.11.0",
@@ -49,10 +49,10 @@
     "vite": "^2.8.0"
   },
   "dependencies": {
-    "@walletconnect/core": "^2.0.0-beta.101.1",
+    "@walletconnect/core": "^2.0.0-beta.102",
     "@walletconnect/jsonrpc-utils": "^1.0.3",
     "@walletconnect/logger": "^1.0.1",
-    "@walletconnect/utils": "^2.0.0-beta.101.1",
+    "@walletconnect/utils": "^2.0.0-beta.102",
     "axios": "^0.27.2",
     "events": "^3.3.0",
     "pino": "^8.0.0"

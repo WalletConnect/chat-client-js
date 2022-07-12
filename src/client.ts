@@ -52,7 +52,6 @@ export class ChatClient extends IChatClient {
             })
           );
 
-    // @ts-expect-error - debug type override
     this.core = new Core(opts);
     this.logger = generateChildLogger(logger, this.name);
     this.chatInvites = new ChatInvites(this.core, this.logger);
