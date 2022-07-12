@@ -48,6 +48,7 @@ export class ChatEngine extends IChatEngine {
     const publicKey = await this.client.core.crypto.generateKeyPair();
 
     await this.client.chatKeys.set(SELF_INVITE_PUBLIC_KEY_NAME, {
+      account,
       publicKey,
     });
 
@@ -127,6 +128,18 @@ export class ChatEngine extends IChatEngine {
 
     await this.client.core.relayer.subscribe(responseTopic);
 
+    await this.client.chatThreadsPending.set(responseTopic, {
+      topic: null,
+      selfAccount: invite.account,
+      peerAccount: account,
+    });
+
+    console.log("invite > chatThreadsPending.set: ", account, {
+      topic: null,
+      selfAccount: invite.account,
+      peerAccount: account,
+    });
+
     return inviteId;
   };
 
@@ -137,9 +150,8 @@ export class ChatEngine extends IChatEngine {
     // NOTE: This is a very roundabout way to get back to symKey I by re-deriving,
     // since crypto.decode doesn't expose it.
     // Can we simplify this?
-    const { publicKey: selfInvitePublicKey } = this.client.chatKeys.get(
-      SELF_INVITE_PUBLIC_KEY_NAME
-    );
+    const { publicKey: selfInvitePublicKey, account: selfAccount } =
+      this.client.chatKeys.get(SELF_INVITE_PUBLIC_KEY_NAME);
     console.log(
       "accept > this.client.chatKeys.get('invitePublicKey'): ",
       selfInvitePublicKey
@@ -174,6 +186,19 @@ export class ChatEngine extends IChatEngine {
     await this.client.core.relayer.subscribe(chatThreadTopic);
 
     console.log("accept > chatThreadTopic:", chatThreadTopic);
+
+    await this.client.chatThreads.set(chatThreadTopic, {
+      topic: chatThreadTopic,
+      selfAccount,
+      peerAccount: invite.account,
+    });
+
+    console.log("accept > chatThreads.set:", chatThreadTopic, {
+      topic: chatThreadTopic,
+      selfAccount,
+      peerAccount: invite.account,
+    });
+
     return chatThreadTopic;
   };
 
@@ -348,7 +373,6 @@ export class ChatEngine extends IChatEngine {
     }
   };
 
-  // TODO: implement
   protected onInviteResponse: IChatEngine["onInviteResponse"] = async (
     topic,
     payload
@@ -375,6 +399,28 @@ export class ChatEngine extends IChatEngine {
 
       // Subscribe to the chat thread topic.
       await this.client.core.relayer.subscribe(chatThreadTopic);
+
+      const { selfAccount, peerAccount } =
+        this.client.chatThreadsPending.get(topic);
+
+      await this.client.chatThreads.set(chatThreadTopic, {
+        topic: chatThreadTopic,
+        selfAccount,
+        peerAccount,
+      });
+
+      console.log("onInviteResponse > chatThreads.set: ", chatThreadTopic, {
+        topic: chatThreadTopic,
+        selfAccount,
+        peerAccount,
+      });
+
+      // TODO (post-mvp): decide on a code to use for this.
+      await this.client.chatThreadsPending.delete(topic, {
+        code: -1,
+        message: "Peer accepted invite.",
+      });
+      console.log("onInviteResponse > chatThreadsPending.delete: ", topic);
     } else if (isJsonRpcError(payload)) {
       this.client.logger.error(payload.error);
     }

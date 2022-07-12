@@ -13,6 +13,7 @@ import {
   JsonRpcHistory,
   ChatInvites,
   ChatThreads,
+  ChatThreadsPending,
 } from "./controllers";
 import { ChatKeys } from "./controllers/chatKeys";
 import { IChatClient } from "./types";
@@ -26,6 +27,7 @@ export class ChatClient extends IChatClient {
   public logger: IChatClient["logger"];
   public chatInvites: IChatClient["chatInvites"];
   public chatThreads: IChatClient["chatThreads"];
+  public chatThreadsPending: IChatClient["chatThreadsPending"];
   public chatMessages: IChatClient["chatMessages"];
   public chatKeys: IChatClient["chatKeys"];
   public engine: IChatClient["engine"];
@@ -55,6 +57,7 @@ export class ChatClient extends IChatClient {
     this.logger = generateChildLogger(logger, this.name);
     this.chatInvites = new ChatInvites(this.core, this.logger);
     this.chatThreads = new ChatThreads(this.core, this.logger);
+    this.chatThreadsPending = new ChatThreadsPending(this.core, this.logger);
     this.chatMessages = new ChatMessages(this.core, this.logger);
     this.chatKeys = new ChatKeys(this.core, this.logger);
     this.history = new JsonRpcHistory(this.core, this.logger);
@@ -142,6 +145,7 @@ export class ChatClient extends IChatClient {
       await this.core.start();
       await this.chatInvites.init();
       await this.chatThreads.init();
+      await this.chatThreadsPending.init();
       await this.chatMessages.init();
       await this.chatKeys.init();
       await this.history.init();

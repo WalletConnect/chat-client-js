@@ -4,6 +4,7 @@ import { Logger } from "pino";
 import { IChatInvites } from "./chatInvites";
 import { IChatMessages } from "./chatMessages";
 import { IChatThreads } from "./chatThreads";
+import { IChatThreadsPending } from "./chatThreadsPending";
 import { IChatEngine } from "./engine";
 
 export declare namespace ChatClientTypes {
@@ -62,6 +63,7 @@ export abstract class IChatClient {
   public abstract logger: Logger;
   public abstract chatInvites: IChatInvites;
   public abstract chatThreads: IChatThreads;
+  public abstract chatThreadsPending: IChatThreadsPending;
   public abstract chatMessages: IChatMessages;
   public abstract chatKeys: IStore<string, any>;
   public abstract engine: IChatEngine;
