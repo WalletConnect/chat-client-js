@@ -76,6 +76,12 @@ describe("ChatClient", () => {
       expect(chatThreadTopic).toBeDefined();
     });
 
+    client.on("chat_joined", async (args) => {
+      const { topic } = args;
+      console.log("chat_joined:", args);
+      expect(topic).toBeDefined();
+    });
+
     const invite: ChatClientTypes.PartialInvite = {
       message: "hey let's chat",
       account: TEST_CLIENT_ACCOUNT,

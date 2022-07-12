@@ -379,10 +379,7 @@ export class ChatEngine extends IChatEngine {
   ) => {
     console.log("onInviteResponse:", topic, payload);
     // TODO (post-MVP): input validation
-    // const { id } = payload;
     if (isJsonRpcResult(payload)) {
-      // TODO: needed? Retrieve sent invite via payload id and mark as accepted.
-
       const { publicKey: inviteProposerPublicKey } = this.client.chatKeys.get(
         INVITE_PROPOSER_PUBLIC_KEY_NAME
       );
@@ -421,6 +418,11 @@ export class ChatEngine extends IChatEngine {
         message: "Peer accepted invite.",
       });
       console.log("onInviteResponse > chatThreadsPending.delete: ", topic);
+
+      this.client.emit("chat_joined", {
+        id: payload.id,
+        topic: chatThreadTopic,
+      });
     } else if (isJsonRpcError(payload)) {
       this.client.logger.error(payload.error);
     }
