@@ -93,12 +93,19 @@ export class ChatEngine extends IChatEngine {
       this.client.chatKeys.get(INVITE_PROPOSER_PUBLIC_KEY_NAME)
     );
 
+    console.log(
+      "invite > responderInvitePublicKey: ",
+      responderInvitePublicKey
+    );
+
     // invite topic is derived as the hash of the publicKey X.
     const inviteTopic = hashKey(responderInvitePublicKey);
     const completeInvite = {
       ...invite,
       publicKey: proposerInvitePublicKey,
     };
+
+    console.log("invite > inviteTopic: ", inviteTopic);
 
     // send invite encrypted with type 1 envelope to the invite topic including publicKey Y.
     const inviteId = await this.sendRequest(
@@ -180,7 +187,9 @@ export class ChatEngine extends IChatEngine {
     const chatThreadTopic = hashKey(symKeyT);
 
     // B sends response with publicKey Z on response topic encrypted with type 0 envelope.
-    await this.sendResult<"wc_chatInvite">(id, responseTopic, { publicKeyZ });
+    await this.sendResult<"wc_chatInvite">(id, responseTopic, {
+      publicKey: publicKeyZ,
+    });
 
     // Subscribe to the chat thread topic.
     await this.client.core.relayer.subscribe(chatThreadTopic);
@@ -280,6 +289,7 @@ export class ChatEngine extends IChatEngine {
     console.log(">>>>>>>>> selfInvitePublicKey:", selfInvitePublicKey);
 
     const selfInviteTopic = hashKey(selfInvitePublicKey);
+    console.log(">>>>>>>>> selfInviteTopic:", selfInviteTopic);
     await this.client.core.relayer.subscribe(selfInviteTopic);
   };
 
@@ -393,7 +403,7 @@ export class ChatEngine extends IChatEngine {
       );
       const topicSymKeyT = await this.client.core.crypto.generateSharedKey(
         inviteProposerPublicKey,
-        payload.result.publicKeyZ
+        payload.result.publicKey
       );
       const symKeyT = this.client.core.crypto.keychain.get(topicSymKeyT);
 

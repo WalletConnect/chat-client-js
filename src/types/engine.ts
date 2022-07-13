@@ -88,7 +88,7 @@ export abstract class IChatEngine {
 
   protected abstract onInviteResponse(
     topic: string,
-    payload: JsonRpcResult<{ publicKeyZ: string }> | JsonRpcError
+    payload: JsonRpcResult<{ publicKey: string }> | JsonRpcError
   ): void;
 
   protected abstract onIncomingMessage(
