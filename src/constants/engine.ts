@@ -1,1 +1,1 @@
-export const KEYSERVER_URL = "159.65.123.131:8080";
+export const KEYSERVER_URL = "https://keys.walletconnect.com";

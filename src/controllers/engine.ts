@@ -53,7 +53,7 @@ export class ChatEngine extends IChatEngine {
     });
 
     // Register on the keyserver via POST request.
-    await axios.post(`http://${KEYSERVER_URL}/register`, {
+    await axios.post(`${KEYSERVER_URL}/register`, {
       account,
       publicKey,
     });
@@ -69,7 +69,7 @@ export class ChatEngine extends IChatEngine {
 
     // Resolve the publicKey for the given account via keyserver.
     const { data } = await axios.get(
-      `http://${KEYSERVER_URL}/resolve?account=${account}`
+      `${KEYSERVER_URL}/resolve?account=${account}`
     );
     const { publicKey } = data;
 
