@@ -199,6 +199,14 @@ export class ChatEngine extends IChatEngine {
       peerAccount: invite.account,
     });
 
+    // TODO (post-mvp): decide on a code to use for this.
+    await this.client.chatInvites.delete(id, {
+      code: -1,
+      message: "Invite accepted.",
+    });
+
+    console.log("accept > chatInvites.delete:", id);
+
     return chatThreadTopic;
   };
 
