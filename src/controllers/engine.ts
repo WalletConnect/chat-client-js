@@ -9,7 +9,7 @@ import {
   isJsonRpcResult,
 } from "@walletconnect/jsonrpc-utils";
 import { RelayerTypes } from "@walletconnect/types";
-import { createDelayedPromise, hashKey, TYPE_1 } from "@walletconnect/utils";
+import { hashKey, TYPE_1 } from "@walletconnect/utils";
 import axios from "axios";
 import EventEmitter from "events";
 import { KEYSERVER_URL } from "../constants";
@@ -225,18 +225,22 @@ export class ChatEngine extends IChatEngine {
   }) => {
     // TODO (post-MVP): preflight validation (is valid message, ...)
 
-    const id = await this.sendRequest(topic, "wc_chatMessage", payload);
+    await this.sendRequest(topic, "wc_chatMessage", payload);
 
-    const {
-      done: acknowledged,
-      resolve,
-      reject,
-    } = createDelayedPromise<void>();
-    this.events.once(engineEvent("chat_message", id), ({ error }) => {
-      if (error) reject(error);
-      else resolve();
-    });
-    await acknowledged();
+    console.log("----- SEND MSG");
+
+    // const {
+    //   done: acknowledged,
+    //   resolve,
+    //   reject,
+    // } = createDelayedPromise<void>();
+    // this.events.once(engineEvent("chat_message", id), ({ error }) => {
+    //   if (error) reject(error);
+    //   else resolve();
+    // });
+    // await acknowledged();
+
+    console.log("SEND MSG ACK --------");
 
     // Set message in ChatMessages store, keyed by thread topic T.
     this.setMessage(topic, payload);

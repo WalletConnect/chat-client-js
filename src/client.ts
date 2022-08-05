@@ -18,6 +18,7 @@ import {
 import { ChatKeys } from "./controllers/chatKeys";
 import { IChatClient } from "./types";
 
+// FIXME: ChatClient not reading existing chatMessages from localStorage for some reason.
 // @ts-expect-error - still missing some method implementations
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
