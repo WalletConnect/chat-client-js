@@ -180,4 +180,30 @@ describe("ChatClient", () => {
       );
     });
   });
+
+  describe("getMessages", () => {
+    it("returns all messages for a given thread topic", async () => {
+      const topic = generateRandomBytes32();
+      const mockChatMessages = [
+        {
+          message: "eyo",
+          authorAccount: "eip155:3:0xab16a96d359ec26a11e2c2b3d8f8b8942d5bfcdb",
+          timestamp: 1666697158617,
+        },
+        {
+          message: "sup",
+          authorAccount: "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F",
+          timestamp: 1666697164166,
+        },
+      ];
+      await client.chatMessages.set(topic, {
+        messages: mockChatMessages,
+      });
+
+      expect(client.getMessages({ topic }).length).toBe(
+        mockChatMessages.length
+      );
+      expect(client.getMessages({ topic })).toEqual(mockChatMessages);
+    });
+  });
 });

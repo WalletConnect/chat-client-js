@@ -119,9 +119,9 @@ export abstract class IChatClient {
   public abstract getThreads(): Map<string, ChatClientTypes.Thread>;
 
   // // returns all messages matching a thread's topic / returns array of messages
-  // public abstract getMessages(params: {
-  //   topic: string;
-  // }): Promise<ChatClientTypes.Message[]>;
+  public abstract getMessages(params: {
+    topic: string;
+  }): ChatClientTypes.Message[];
 
   // ---------- Event Handlers ----------------------------------------------- //
 
