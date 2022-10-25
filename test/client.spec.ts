@@ -170,6 +170,59 @@ describe("ChatClient", () => {
     expect(eventCount).toBe(2);
   });
 
+  describe("ping", () => {
+    it("can ping a known chat peer", async () => {
+      // TODO: abstract this step, it duplicates the invite test above.
+      // Set up an acknowledged chat thread
+      let chatThreadTopic = "";
+      let peerReceivedInvite = false;
+      let peerJoinedChat = false;
+
+      const peerInvitePublicKey = await peer.register({
+        account: TEST_PEER_ACCOUNT,
+      });
+
+      client.resolve = jest.fn(() => Promise.resolve(peerInvitePublicKey));
+
+      peer.on("chat_invite", async (args) => {
+        const { id } = args;
+        console.log("chat_invite:", args);
+        chatThreadTopic = await peer.accept({ id });
+        expect(chatThreadTopic).toBeDefined();
+        peerReceivedInvite = true;
+      });
+
+      client.on("chat_joined", async (args) => {
+        const { topic } = args;
+        console.log("chat_joined:", args);
+        expect(topic).toBeDefined();
+        peerJoinedChat = true;
+      });
+
+      const invite: ChatClientTypes.PartialInvite = {
+        message: "hey let's chat",
+        account: TEST_CLIENT_ACCOUNT,
+      };
+
+      await client.invite({
+        account: TEST_PEER_ACCOUNT,
+        invite,
+      });
+
+      await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
+
+      // Perform the ping
+      let peerGotPing = false;
+      peer.on("chat_ping", ({ topic }) => {
+        expect(topic).toBe(chatThreadTopic);
+        peerGotPing = true;
+      });
+
+      await client.ping({ topic: chatThreadTopic });
+      await waitForEvent(() => peerGotPing);
+    });
+  });
+
   describe("getInvites", () => {
     it("returns all current invites", async () => {
       const mockInviteId = 1666697147892830;

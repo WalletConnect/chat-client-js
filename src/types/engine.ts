@@ -40,6 +40,8 @@ export abstract class IChatEngine {
     payload: ChatClientTypes.Message;
   }): Promise<void>;
 
+  public abstract ping(params: { topic: string }): Promise<void>;
+
   // ---------- Protected Helpers --------------------------------------- //
 
   protected abstract sendRequest<M extends JsonRpcTypes.WcMethod>(
@@ -99,5 +101,15 @@ export abstract class IChatEngine {
   protected abstract onSendMessageResponse(
     topic: string,
     payload: JsonRpcResult<true> | JsonRpcError
+  ): void;
+
+  protected abstract onChatPingRequest(
+    topic: string,
+    payload: JsonRpcRequest<JsonRpcTypes.RequestParams["wc_chatPing"]>
+  ): Promise<void>;
+
+  protected abstract onChatPingResponse(
+    topic: string,
+    payload: JsonRpcResult<JsonRpcTypes.Results["wc_chatPing"]> | JsonRpcError
   ): void;
 }
