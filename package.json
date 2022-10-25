@@ -1,16 +1,15 @@
 {
   "name": "@walletconnect/chat-client",
-  "private": true,
-  "version": "0.0.0",
+  "description": "Chat Client for WalletConnect Protocol",
+  "version": "0.1.2",
+  "author": "WalletConnect, Inc. <walletconnect.com>",
+  "homepage": "https://github.com/walletconnect/walletconnect-monorepo/",
   "main": "./dist/chat-client.cjs",
   "module": "./dist/chat-client.mjs",
   "types": "./dist/chat-client.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/chat-client.cjs",
-      "import": "./dist/chat-client.mjs"
-    }
-  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite --host",
     "build": "tsc && vite build && dts-bundle-generator --config ./dts-bundle-generator.config.ts",
@@ -22,7 +21,8 @@
     "format:scripts": "prettier . --write",
     "format:styles": "stylelint ./**/*.{css,scss} --fix",
     "format": "npm run format:scripts && npm run format:styles",
-    "prepare": "husky install && husky add .husky/pre-commit 'npx lint-staged' && git add .husky/pre-commit"
+    "prepublishOnly": "npm run build",
+    "npm-publish": "npm publish --access public"
   },
   "dependencies": {
     "@walletconnect/core": "2.0.0-rc.4",
