@@ -116,9 +116,7 @@ export abstract class IChatClient {
   public abstract getInvites(): Map<number, ChatClientTypes.Invite>;
 
   // // returns all threads matching an account / returns map of threads indexed by topic
-  // public abstract getThreads(params: {
-  //   account: string;
-  // }): Promise<Map<string, ChatClientTypes.Thread>>;
+  public abstract getThreads(): Map<string, ChatClientTypes.Thread>;
 
   // // returns all messages matching a thread's topic / returns array of messages
   // public abstract getMessages(params: {

@@ -123,6 +123,15 @@ export class ChatClient extends IChatClient {
     }
   };
 
+  public getThreads: IChatClient["getThreads"] = () => {
+    try {
+      return this.chatThreads.map;
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
   // ---------- Events ----------------------------------------------- //
 
   public emit: IChatClient["emit"] = (name, listener) => {

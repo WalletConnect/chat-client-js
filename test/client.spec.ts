@@ -164,4 +164,20 @@ describe("ChatClient", () => {
       expect(client.getInvites().get(mockInviteId)).toEqual(mockInvite);
     });
   });
+
+  describe("getThreads", () => {
+    it("returns all currently active chat threads", async () => {
+      const mockChatThread = {
+        topic: generateRandomBytes32(),
+        selfAccount: "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F",
+        peerAccount: "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5FFFF",
+      };
+      await client.chatThreads.set(mockChatThread.topic, mockChatThread);
+
+      expect(client.getThreads().size).toBe(1);
+      expect(client.getThreads().get(mockChatThread.topic)).toEqual(
+        mockChatThread
+      );
+    });
+  });
 });
