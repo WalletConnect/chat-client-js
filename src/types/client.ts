@@ -37,6 +37,12 @@ export declare namespace ChatClientTypes {
     peerAccount: string;
   }
 
+  interface PendingThread {
+    topic: string | null;
+    selfAccount: string;
+    peerAccount: string;
+  }
+
   // ---------- Event Types ----------------------------------------------- //
 
   type Event = "chat_invite" | "chat_joined" | "chat_message" | "chat_left";
