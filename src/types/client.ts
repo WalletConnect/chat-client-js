@@ -37,6 +37,12 @@ export declare namespace ChatClientTypes {
     peerAccount: string;
   }
 
+  interface PendingThread {
+    topic: string | null;
+    selfAccount: string;
+    peerAccount: string;
+  }
+
   // ---------- Event Types ----------------------------------------------- //
 
   type Event = "chat_invite" | "chat_joined" | "chat_message" | "chat_left";
@@ -113,19 +119,15 @@ export abstract class IChatClient {
   // }): Promise<void>;
 
   // // returns all invites matching an account / returns maps of invites indexed by id
-  // public abstract getInvites(params: {
-  //   account: string;
-  // }): Promise<Map<string, ChatClientTypes.Invite>>;
+  public abstract getInvites(): Map<number, ChatClientTypes.Invite>;
 
   // // returns all threads matching an account / returns map of threads indexed by topic
-  // public abstract getThreads(params: {
-  //   account: string;
-  // }): Promise<Map<string, ChatClientTypes.Thread>>;
+  public abstract getThreads(): Map<string, ChatClientTypes.Thread>;
 
   // // returns all messages matching a thread's topic / returns array of messages
-  // public abstract getMessages(params: {
-  //   topic: string;
-  // }): Promise<ChatClientTypes.Message[]>;
+  public abstract getMessages(params: {
+    topic: string;
+  }): ChatClientTypes.Message[];
 
   // ---------- Event Handlers ----------------------------------------------- //
 

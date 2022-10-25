@@ -114,6 +114,33 @@ export class ChatClient extends IChatClient {
     }
   };
 
+  public getInvites: IChatClient["getInvites"] = () => {
+    try {
+      return this.chatInvites.map;
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
+  public getThreads: IChatClient["getThreads"] = () => {
+    try {
+      return this.chatThreads.map;
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
+  public getMessages: IChatClient["getMessages"] = ({ topic }) => {
+    try {
+      return this.chatMessages.get(topic).messages;
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
   // ---------- Events ----------------------------------------------- //
 
   public emit: IChatClient["emit"] = (name, listener) => {
