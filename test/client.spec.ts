@@ -13,8 +13,9 @@ describe("ChatClient", () => {
   beforeAll(async () => {
     client = await ChatClient.init({
       logger: "error",
-      relayUrl: "ws://0.0.0.0:5555",
-      projectId: undefined,
+      relayUrl:
+        process.env.TEST_RELAY_URL || "wss://staging.relay.walletconnect.com",
+      projectId: process.env.TEST_PROJECT_ID,
       storageOptions: {
         database: ":memory:",
       },
@@ -22,8 +23,9 @@ describe("ChatClient", () => {
 
     peer = await ChatClient.init({
       logger: "error",
-      relayUrl: "ws://0.0.0.0:5555",
-      projectId: undefined,
+      relayUrl:
+        process.env.TEST_RELAY_URL || "wss://staging.relay.walletconnect.com",
+      projectId: process.env.TEST_PROJECT_ID,
       storageOptions: {
         database: ":memory:",
       },
@@ -38,7 +40,7 @@ describe("ChatClient", () => {
     expect(client.chatMessages).toBeDefined();
   });
 
-  it.skip("can register an account on the keyserver", async () => {
+  it("can register an account on the keyserver", async () => {
     const publicKey = await client.register({
       account: TEST_CLIENT_ACCOUNT,
     });
@@ -50,7 +52,7 @@ describe("ChatClient", () => {
     expect(peerPublicKey.length).toBeGreaterThan(0);
   });
 
-  it.skip("can resolve an account on the keyserver", async () => {
+  it("can resolve an account on the keyserver", async () => {
     const publicKey = await peer.resolve({
       account: TEST_CLIENT_ACCOUNT,
     });
