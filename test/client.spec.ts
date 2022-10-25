@@ -83,6 +83,9 @@ describe("ChatClient", () => {
   });
 
   it("can send & receive invites", async () => {
+    let peerReceivedInvite = false;
+    let peerJoinedChat = false;
+
     const peerInvitePublicKey = await peer.register({
       account: TEST_PEER_ACCOUNT,
     });
@@ -94,12 +97,14 @@ describe("ChatClient", () => {
       console.log("chat_invite:", args);
       const chatThreadTopic = await peer.accept({ id });
       expect(chatThreadTopic).toBeDefined();
+      peerReceivedInvite = true;
     });
 
     client.on("chat_joined", async (args) => {
       const { topic } = args;
       console.log("chat_joined:", args);
       expect(topic).toBeDefined();
+      peerJoinedChat = true;
     });
 
     const invite: ChatClientTypes.PartialInvite = {
@@ -111,6 +116,8 @@ describe("ChatClient", () => {
       account: TEST_PEER_ACCOUNT,
       invite,
     });
+
+    await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
 
     expect(inviteId).toBeDefined();
   });
