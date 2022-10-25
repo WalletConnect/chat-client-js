@@ -99,32 +99,33 @@ export abstract class IChatClient {
     payload: ChatClientTypes.Message;
   }): Promise<void>;
 
-  // ping its peer to evaluate if it's currently online
-  public abstract ping(params: { topic: string }): Promise<void>;
+  // TODO: implement
+  // // ping its peer to evaluate if it's currently online
+  // public abstract ping(params: { topic: string }): Promise<void>;
 
-  // leaves a chat thread and stops receiving messages
-  public abstract leave(params: { topic: string }): Promise<void>;
+  // // leaves a chat thread and stops receiving messages
+  // public abstract leave(params: { topic: string }): Promise<void>;
 
-  // adds peer account with public key
-  public abstract addContact(params: {
-    account: string;
-    publicKey: string;
-  }): Promise<void>;
+  // // adds peer account with public key
+  // public abstract addContact(params: {
+  //   account: string;
+  //   publicKey: string;
+  // }): Promise<void>;
 
-  // returns all invites matching an account / returns maps of invites indexed by id
-  public abstract getInvites(params: {
-    account: string;
-  }): Promise<Map<string, ChatClientTypes.Invite>>;
+  // // returns all invites matching an account / returns maps of invites indexed by id
+  // public abstract getInvites(params: {
+  //   account: string;
+  // }): Promise<Map<string, ChatClientTypes.Invite>>;
 
-  // returns all threads matching an account / returns map of threads indexed by topic
-  public abstract getThreads(params: {
-    account: string;
-  }): Promise<Map<string, ChatClientTypes.Thread>>;
+  // // returns all threads matching an account / returns map of threads indexed by topic
+  // public abstract getThreads(params: {
+  //   account: string;
+  // }): Promise<Map<string, ChatClientTypes.Thread>>;
 
-  // returns all messages matching a thread's topic / returns array of messages
-  public abstract getMessages(params: {
-    topic: string;
-  }): Promise<ChatClientTypes.Message[]>;
+  // // returns all messages matching a thread's topic / returns array of messages
+  // public abstract getMessages(params: {
+  //   topic: string;
+  // }): Promise<ChatClientTypes.Message[]>;
 
   // ---------- Event Handlers ----------------------------------------------- //
 
