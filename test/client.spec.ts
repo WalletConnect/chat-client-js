@@ -7,6 +7,18 @@ const TEST_CLIENT_ACCOUNT =
   "eip155:1:0xf07A0e1454771826472AE22A212575296f309c8C";
 const TEST_PEER_ACCOUNT = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
 
+// Polls boolean value every interval to check for an event callback having been triggered.
+const waitForEvent = async (checkForEvent: (...args: any[]) => boolean) => {
+  await new Promise((resolve) => {
+    const intervalId = setInterval(() => {
+      if (checkForEvent()) {
+        clearInterval(intervalId);
+        resolve({});
+      }
+    }, 100);
+  });
+};
+
 describe("ChatClient", () => {
   let client: ChatClient;
   let peer: ChatClient;
@@ -137,6 +149,8 @@ describe("ChatClient", () => {
       topic,
       payload,
     });
+
+    await waitForEvent(() => eventCount === 2);
 
     expect(client.chatMessages.keys.length).toBe(1);
     expect(client.chatMessages.get(topic)).toEqual({
