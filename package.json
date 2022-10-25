@@ -1,7 +1,7 @@
 {
   "name": "@walletconnect/chat-client",
   "description": "Chat Client for WalletConnect Protocol",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "WalletConnect, Inc. <walletconnect.com>",
   "homepage": "https://github.com/walletconnect/walletconnect-monorepo/",
   "main": "./dist/chat-client.cjs",
