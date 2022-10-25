@@ -114,6 +114,15 @@ export class ChatClient extends IChatClient {
     }
   };
 
+  public getInvites: IChatClient["getInvites"] = () => {
+    try {
+      return this.chatInvites.map;
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
   // ---------- Events ----------------------------------------------- //
 
   public emit: IChatClient["emit"] = (name, listener) => {
