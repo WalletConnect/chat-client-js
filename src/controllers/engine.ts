@@ -301,9 +301,9 @@ export class ChatEngine extends IChatEngine {
     if (this.client.chatMessages.keys.includes(topic)) {
       const current = this.client.chatMessages.get(topic);
       const messages = [...current.messages, item];
-      await this.client.chatMessages.update(topic, { messages });
+      await this.client.chatMessages.update(topic, { messages, topic });
     } else {
-      await this.client.chatMessages.set(topic, { messages: [item] });
+      await this.client.chatMessages.set(topic, { messages: [item], topic });
     }
   };
 

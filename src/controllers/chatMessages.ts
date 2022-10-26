@@ -6,27 +6,12 @@ import {
   CHAT_MESSAGES_CONTEXT,
 } from "../constants";
 
-import { ChatClientTypes, IChatThreads } from "../types";
-let i = 0;
+import { ChatClientTypes } from "../types";
 export class ChatMessages extends Store<
   string,
-  { messages: ChatClientTypes.Message[] }
+  { messages: ChatClientTypes.Message[]; topic: string }
 > {
-  constructor(
-    public core: ICore,
-    public chatThreads: IChatThreads,
-    public logger: Logger
-  ) {
-    super(
-      core,
-      logger,
-      CHAT_MESSAGES_CONTEXT,
-      CHAT_CLIENT_STORAGE_PREFIX,
-      () => {
-        const index = i;
-        i++;
-        return chatThreads.getAll()[index].topic;
-      }
-    );
+  constructor(public core: ICore, public logger: Logger) {
+    super(core, logger, CHAT_MESSAGES_CONTEXT, CHAT_CLIENT_STORAGE_PREFIX);
   }
 }

@@ -57,11 +57,7 @@ export class ChatClient extends IChatClient {
     this.chatInvites = new ChatInvites(this.core, this.logger);
     this.chatThreads = new ChatThreads(this.core, this.logger);
     this.chatThreadsPending = new ChatThreadsPending(this.core, this.logger);
-    this.chatMessages = new ChatMessages(
-      this.core,
-      this.chatThreads,
-      this.logger
-    );
+    this.chatMessages = new ChatMessages(this.core, this.logger);
     this.chatKeys = new ChatKeys(this.core, this.logger);
     this.history = new JsonRpcHistory(this.core, this.logger);
     this.engine = new ChatEngine(this);
