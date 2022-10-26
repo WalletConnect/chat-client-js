@@ -3,5 +3,5 @@ import { ChatClientTypes } from "./client";
 
 export type IChatMessages = IStore<
   string,
-  { messages: ChatClientTypes.Message[] }
+  { messages: ChatClientTypes.Message[]; topic: string }
 >;
