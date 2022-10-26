@@ -148,9 +148,15 @@ describe("ChatClient", () => {
     });
 
     expect(client.chatMessages.keys.length).toBe(1);
-    expect(client.chatMessages.get(topic)).toEqual({ messages: [payload] });
+    expect(client.chatMessages.get(topic)).toEqual({
+      topic,
+      messages: [payload],
+    });
     expect(peer.chatMessages.keys.length).toBe(1);
-    expect(peer.chatMessages.get(topic)).toEqual({ messages: [payload] });
+    expect(peer.chatMessages.get(topic)).toEqual({
+      topic,
+      messages: [payload],
+    });
 
     await client.message({
       topic,
@@ -161,10 +167,12 @@ describe("ChatClient", () => {
 
     expect(client.chatMessages.keys.length).toBe(1);
     expect(client.chatMessages.get(topic)).toEqual({
+      topic,
       messages: [payload, payload],
     });
     expect(peer.chatMessages.keys.length).toBe(1);
     expect(peer.chatMessages.get(topic)).toEqual({
+      topic,
       messages: [payload, payload],
     });
     expect(eventCount).toBe(2);
@@ -271,6 +279,7 @@ describe("ChatClient", () => {
         },
       ];
       await client.chatMessages.set(topic, {
+        topic,
         messages: mockChatMessages,
       });
 
