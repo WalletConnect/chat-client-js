@@ -1,12 +1,12 @@
 import {
-  ErrorResponse,
-  JsonRpcRequest,
-  JsonRpcResponse,
+  ErrorResponse as IErrorResponse,
+  JsonRpcRequest as IJsonRpcRequest,
+  JsonRpcResponse as IJsonRpcResponse,
 } from "@walletconnect/jsonrpc-types";
 
 export declare namespace JsonRpcTypes {
   // -- core ------------------------------------------------------- //
-  type DefaultResponse = true | ErrorResponse;
+  type DefaultResponse = true | IErrorResponse;
 
   export type WcMethod =
     | "wc_chatInvite"
@@ -14,7 +14,7 @@ export declare namespace JsonRpcTypes {
     | "wc_chatPing"
     | "wc_chatLeave";
 
-  type Error = ErrorResponse;
+  type Error = IErrorResponse;
 
   // -- requests --------------------------------------------------- //
 
@@ -28,7 +28,7 @@ export declare namespace JsonRpcTypes {
   }
 
   // -- events ----------------------------------------------------- //
-  interface EventCallback<T extends JsonRpcRequest | JsonRpcResponse> {
+  interface EventCallback<T extends IJsonRpcRequest | IJsonRpcResponse> {
     topic: string;
     payload: T;
   }
