@@ -3,6 +3,7 @@ import {
   JsonRpcRequest as IJsonRpcRequest,
   JsonRpcResponse as IJsonRpcResponse,
 } from "@walletconnect/jsonrpc-types";
+import { ChatClientTypes } from "./client";
 
 export declare namespace JsonRpcTypes {
   // -- core ------------------------------------------------------- //
@@ -19,12 +20,18 @@ export declare namespace JsonRpcTypes {
   // -- requests --------------------------------------------------- //
 
   interface RequestParams {
+    wc_chatInvite: ChatClientTypes.Invite;
+    wc_chatMessage: ChatClientTypes.Message;
     wc_chatPing: Record<string, unknown>;
+    wc_chatLeave: Record<string, unknown>;
   }
 
   // -- responses -------------------------------------------------- //
   interface Results {
+    wc_chatInvite: { publicKey: string };
+    wc_chatMessage: true;
     wc_chatPing: true;
+    wc_chatLeave: true;
   }
 
   // -- events ----------------------------------------------------- //

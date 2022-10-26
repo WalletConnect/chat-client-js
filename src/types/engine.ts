@@ -47,17 +47,14 @@ export abstract class IChatEngine {
   protected abstract sendRequest<M extends JsonRpcTypes.WcMethod>(
     topic: string,
     method: M,
-    // params: JsonRpcTypes.RequestParams[M]
-    params: any,
+    params: JsonRpcTypes.RequestParams[M],
     opts?: CryptoTypes.EncodeOptions
   ): Promise<number>;
 
-  // @ts-expect-error - needs Results interface
   protected abstract sendResult<M extends JsonRpcTypes.WcMethod>(
     id: number,
     topic: string,
-    // result: JsonRpcTypes.Results[M]
-    result: any,
+    result: JsonRpcTypes.Results[M],
     opts?: CryptoTypes.EncodeOptions
   ): Promise<void>;
 
