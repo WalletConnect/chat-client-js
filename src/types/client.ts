@@ -45,7 +45,12 @@ export declare namespace ChatClientTypes {
 
   // ---------- Event Types ----------------------------------------------- //
 
-  type Event = "chat_invite" | "chat_joined" | "chat_message" | "chat_left";
+  type Event =
+    | "chat_invite"
+    | "chat_joined"
+    | "chat_message"
+    | "chat_ping"
+    | "chat_left";
 
   interface BaseEventArgs<T = unknown> {
     id: number;
@@ -57,6 +62,7 @@ export declare namespace ChatClientTypes {
     chat_invite: BaseEventArgs<Invite>;
     chat_joined: Omit<BaseEventArgs, "params">;
     chat_message: BaseEventArgs<Message>;
+    chat_ping: Omit<BaseEventArgs, "params">;
     chat_left: Omit<BaseEventArgs, "params">;
   }
 }
@@ -105,9 +111,8 @@ export abstract class IChatClient {
     payload: ChatClientTypes.Message;
   }): Promise<void>;
 
-  // TODO: implement
-  // // ping its peer to evaluate if it's currently online
-  // public abstract ping(params: { topic: string }): Promise<void>;
+  // ping chat peer to evaluate if it's currently online
+  public abstract ping(params: { topic: string }): Promise<void>;
 
   // // leaves a chat thread and stops receiving messages
   // public abstract leave(params: { topic: string }): Promise<void>;
@@ -118,13 +123,13 @@ export abstract class IChatClient {
   //   publicKey: string;
   // }): Promise<void>;
 
-  // // returns all invites matching an account / returns maps of invites indexed by id
+  // returns all invites matching an account / returns maps of invites indexed by id
   public abstract getInvites(): Map<number, ChatClientTypes.Invite>;
 
-  // // returns all threads matching an account / returns map of threads indexed by topic
+  // returns all threads matching an account / returns map of threads indexed by topic
   public abstract getThreads(): Map<string, ChatClientTypes.Thread>;
 
-  // // returns all messages matching a thread's topic / returns array of messages
+  // returns all messages matching a thread's topic / returns array of messages
   public abstract getMessages(params: {
     topic: string;
   }): ChatClientTypes.Message[];

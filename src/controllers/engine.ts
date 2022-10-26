@@ -9,7 +9,7 @@ import {
   isJsonRpcResult,
 } from "@walletconnect/jsonrpc-utils";
 import { RelayerTypes } from "@walletconnect/types";
-import { hashKey, TYPE_1 } from "@walletconnect/utils";
+import { createDelayedPromise, hashKey, TYPE_1 } from "@walletconnect/utils";
 import axios from "axios";
 import EventEmitter from "events";
 import { KEYSERVER_URL } from "../constants";
@@ -246,6 +246,20 @@ export class ChatEngine extends IChatEngine {
     this.setMessage(topic, payload);
   };
 
+  public ping: IChatEngine["ping"] = async ({ topic }) => {
+    // this.isInitialized();
+    // await this.isValidPing(params);
+    if (this.client.chatThreads.keys.includes(topic)) {
+      const id = await this.sendRequest(topic, "wc_chatPing", {});
+      const { done, resolve, reject } = createDelayedPromise<void>();
+      this.events.once(engineEvent("chat_ping", id), ({ error }) => {
+        if (error) reject(error);
+        else resolve();
+      });
+      await done();
+    }
+  };
+
   // ---------- Protected Helpers --------------------------------------- //
 
   protected sendRequest: IChatEngine["sendRequest"] = async (
@@ -348,6 +362,8 @@ export class ChatEngine extends IChatEngine {
         return this.onIncomingInvite(topic, payload);
       case "wc_chatMessage":
         return this.onIncomingMessage(topic, payload);
+      case "wc_chatPing":
+        return this.onChatPingRequest(topic, payload);
       default:
         this.client.logger.info(`Unsupported request method ${reqMethod}`);
         return;
@@ -366,6 +382,8 @@ export class ChatEngine extends IChatEngine {
         return this.onInviteResponse(topic, payload);
       case "wc_chatMessage":
         return this.onSendMessageResponse(topic, payload);
+      case "wc_chatPing":
+        return this.onChatPingResponse(topic, payload);
 
       default:
         this.client.logger.info(`Unsupported response method ${resMethod}`);
@@ -477,4 +495,37 @@ export class ChatEngine extends IChatEngine {
         });
       }
     };
+
+  protected onChatPingRequest: IChatEngine["onChatPingRequest"] = async (
+    topic,
+    payload
+  ) => {
+    const { id } = payload;
+    try {
+      // this.isValidPing({ topic });
+      await this.sendResult<"wc_chatPing">(id, topic, true);
+      this.client.emit("chat_ping", { id, topic });
+    } catch (err: any) {
+      await this.sendError(id, topic, err);
+      this.client.logger.error(err);
+    }
+  };
+
+  protected onChatPingResponse: IChatEngine["onChatPingResponse"] = (
+    _topic,
+    payload
+  ) => {
+    const { id } = payload;
+    // put at the end of the stack to avoid a race condition
+    // where chat_ping listener is not yet initialized
+    setTimeout(() => {
+      if (isJsonRpcResult(payload)) {
+        this.events.emit(engineEvent("chat_ping", id), {});
+      } else if (isJsonRpcError(payload)) {
+        this.events.emit(engineEvent("chat_ping", id), {
+          error: payload.error,
+        });
+      }
+    }, 500);
+  };
 }
