@@ -6,6 +6,12 @@ import { ChatClientTypes } from "../types";
 
 export class ChatInvites extends Store<number, ChatClientTypes.Invite> {
   constructor(public core: ICore, public logger: Logger) {
-    super(core, logger, CHAT_INVITES_CONTEXT, CHAT_CLIENT_STORAGE_PREFIX);
+    super(
+      core,
+      logger,
+      CHAT_INVITES_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX,
+      (invite: ChatClientTypes.Invite) => invite.id
+    );
   }
 }

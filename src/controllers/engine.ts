@@ -43,21 +43,28 @@ export class ChatEngine extends IChatEngine {
 
   public register: IChatEngine["register"] = async ({ account }) => {
     // TODO (post-MVP): preflight validation (is valid account, is account already registered, handle `private` flag param)
+    let publicKey;
+    try {
+      const { publicKey: storedPublicKey } = this.client.chatKeys.get(
+        SELF_INVITE_PUBLIC_KEY_NAME
+      );
+      publicKey = storedPublicKey;
+    } catch (err) {
+      // Generate a publicKey to be associated with this account.
+      publicKey = await this.client.core.crypto.generateKeyPair();
 
-    // Generate a publicKey to be associated with this account.
-    const publicKey = await this.client.core.crypto.generateKeyPair();
+      // Register on the keyserver via POST request.
+      await axios.post(`${KEYSERVER_URL}/register`, {
+        account,
+        publicKey,
+      });
 
-    await this.client.chatKeys.set(SELF_INVITE_PUBLIC_KEY_NAME, {
-      account,
-      publicKey,
-    });
-
-    // Register on the keyserver via POST request.
-    await axios.post(`${KEYSERVER_URL}/register`, {
-      account,
-      publicKey,
-    });
-
+      await this.client.chatKeys.set(SELF_INVITE_PUBLIC_KEY_NAME, {
+        account,
+        publicKey,
+        _key: SELF_INVITE_PUBLIC_KEY_NAME,
+      });
+    }
     // Subscribe to the inviteTopic once we've registered on the keyserver.
     await this.subscribeToSelfInviteTopic();
 
@@ -86,6 +93,7 @@ export class ChatEngine extends IChatEngine {
 
     await this.client.chatKeys.set(INVITE_PROPOSER_PUBLIC_KEY_NAME, {
       publicKey: proposerInvitePublicKey,
+      _key: INVITE_PROPOSER_PUBLIC_KEY_NAME,
     });
 
     console.log(
@@ -136,13 +144,13 @@ export class ChatEngine extends IChatEngine {
     await this.client.core.relayer.subscribe(responseTopic);
 
     await this.client.chatThreadsPending.set(responseTopic, {
-      topic: null,
+      topic: responseTopic,
       selfAccount: invite.account,
       peerAccount: account,
     });
 
     console.log("invite > chatThreadsPending.set: ", account, {
-      topic: null,
+      topic: responseTopic,
       selfAccount: invite.account,
       peerAccount: account,
     });
@@ -401,7 +409,7 @@ export class ChatEngine extends IChatEngine {
     try {
       const { id, params } = payload;
       console.log("payload:", payload);
-      await this.client.chatInvites.set(id, params);
+      await this.client.chatInvites.set(id, { ...params, id });
       this.client.emit("chat_invite", {
         id,
         topic: inviteTopic,

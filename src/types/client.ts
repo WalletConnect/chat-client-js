@@ -17,6 +17,7 @@ export declare namespace ChatClientTypes {
 
   interface Invite extends PartialInvite {
     publicKey: string;
+    id?: number;
   }
 
   interface Media {
@@ -43,6 +44,11 @@ export declare namespace ChatClientTypes {
     peerAccount: string;
   }
 
+  interface ChatKey {
+    _key: string;
+    account: string | null;
+    publicKey: string | null;
+  }
   // ---------- Event Types ----------------------------------------------- //
 
   type Event =
