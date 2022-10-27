@@ -120,8 +120,8 @@ export abstract class IChatClient {
   // ping chat peer to evaluate if it's currently online
   public abstract ping(params: { topic: string }): Promise<void>;
 
-  // // leaves a chat thread and stops receiving messages
-  // public abstract leave(params: { topic: string }): Promise<void>;
+  // leaves a chat thread and stops receiving messages
+  public abstract leave(params: { topic: string }): Promise<void>;
 
   // // adds peer account with public key
   // public abstract addContact(params: {

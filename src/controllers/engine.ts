@@ -9,7 +9,12 @@ import {
   isJsonRpcResult,
 } from "@walletconnect/jsonrpc-utils";
 import { RelayerTypes } from "@walletconnect/types";
-import { createDelayedPromise, hashKey, TYPE_1 } from "@walletconnect/utils";
+import {
+  createDelayedPromise,
+  getSdkError,
+  hashKey,
+  TYPE_1,
+} from "@walletconnect/utils";
 import axios from "axios";
 import EventEmitter from "events";
 import { KEYSERVER_URL } from "../constants";
@@ -268,6 +273,14 @@ export class ChatEngine extends IChatEngine {
     }
   };
 
+  public leave: IChatEngine["leave"] = async ({ topic }) => {
+    // this.isInitialized();
+    if (this.client.chatThreads.keys.includes(topic)) {
+      await this.sendRequest(topic, "wc_chatLeave", {});
+      await this.leaveChat(topic);
+    }
+  };
+
   // ---------- Protected Helpers --------------------------------------- //
 
   protected sendRequest: IChatEngine["sendRequest"] = async (
@@ -329,6 +342,16 @@ export class ChatEngine extends IChatEngine {
     }
   };
 
+  protected leaveChat: IChatEngine["leaveChat"] = async (topic) => {
+    // Await the unsubscribe first to avoid deleting the symKey too early below.
+    await this.client.core.relayer.unsubscribe(topic);
+    await Promise.all([
+      this.client.chatThreads.delete(topic, getSdkError("USER_DISCONNECTED")),
+      this.client.chatMessages.delete(topic, getSdkError("USER_DISCONNECTED")),
+      this.client.core.crypto.deleteSymKey(topic),
+    ]);
+  };
+
   // ---------- Relay Event Routing ----------------------------------- //
 
   private registerRelayerEvents() {
@@ -372,6 +395,8 @@ export class ChatEngine extends IChatEngine {
         return this.onIncomingMessage(topic, payload);
       case "wc_chatPing":
         return this.onChatPingRequest(topic, payload);
+      case "wc_chatLeave":
+        return this.onChatLeaveRequest(topic, payload);
       default:
         this.client.logger.info(`Unsupported request method ${reqMethod}`);
         return;
@@ -535,5 +560,21 @@ export class ChatEngine extends IChatEngine {
         });
       }
     }, 500);
+  };
+
+  protected onChatLeaveRequest: IChatEngine["onChatLeaveRequest"] = async (
+    topic,
+    payload
+  ) => {
+    const { id } = payload;
+    try {
+      // RPC response needs to happen before deletion as it utilises encryption.
+      await this.sendResult<"wc_chatLeave">(id, topic, true);
+      await this.leaveChat(topic);
+      this.client.emit("chat_left", { id, topic });
+    } catch (err: any) {
+      await this.sendError(id, topic, err);
+      this.client.logger.error(err);
+    }
   };
 }

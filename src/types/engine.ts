@@ -42,6 +42,8 @@ export abstract class IChatEngine {
 
   public abstract ping(params: { topic: string }): Promise<void>;
 
+  public abstract leave(params: { topic: string }): Promise<void>;
+
   // ---------- Protected Helpers --------------------------------------- //
 
   protected abstract sendRequest<M extends JsonRpcTypes.WcMethod>(
@@ -69,6 +71,8 @@ export abstract class IChatEngine {
     topic: string,
     item: ChatClientTypes.Message
   ): Promise<void>;
+
+  protected abstract leaveChat(topic: string): Promise<void>;
 
   // ---------- Protected Relay Event Methods ----------------------------------- //
 
@@ -109,4 +113,9 @@ export abstract class IChatEngine {
     topic: string,
     payload: JsonRpcResult<JsonRpcTypes.Results["wc_chatPing"]> | JsonRpcError
   ): void;
+
+  protected abstract onChatLeaveRequest(
+    topic: string,
+    payload: JsonRpcRequest<JsonRpcTypes.RequestParams["wc_chatLeave"]>
+  ): Promise<void>;
 }

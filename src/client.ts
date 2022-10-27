@@ -123,6 +123,15 @@ export class ChatClient extends IChatClient {
     }
   };
 
+  public leave: IChatClient["leave"] = async (params) => {
+    try {
+      return await this.engine.leave(params);
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
   public getInvites: IChatClient["getInvites"] = () => {
     try {
       return this.chatInvites.map;
