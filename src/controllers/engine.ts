@@ -144,13 +144,13 @@ export class ChatEngine extends IChatEngine {
     await this.client.core.relayer.subscribe(responseTopic);
 
     await this.client.chatThreadsPending.set(responseTopic, {
-      topic: null,
+      topic: responseTopic,
       selfAccount: invite.account,
       peerAccount: account,
     });
 
     console.log("invite > chatThreadsPending.set: ", account, {
-      topic: null,
+      topic: responseTopic,
       selfAccount: invite.account,
       peerAccount: account,
     });

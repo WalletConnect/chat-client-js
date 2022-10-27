@@ -16,7 +16,8 @@ export class ChatThreadsPending extends Store<
       core,
       logger,
       CHAT_THREADS_PENDING_CONTEXT,
-      CHAT_CLIENT_STORAGE_PREFIX
+      CHAT_CLIENT_STORAGE_PREFIX,
+      (pendingThread: ChatClientTypes.PendingThread) => pendingThread.topic
     );
   }
 }
