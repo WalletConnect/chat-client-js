@@ -35,6 +35,8 @@ export abstract class IChatEngine {
 
   public abstract accept(params: { id: number }): Promise<string>;
 
+  public abstract reject(params: { id: number }): Promise<void>;
+
   public abstract sendMessage(params: {
     topic: string;
     payload: ChatClientTypes.Message;
@@ -98,6 +100,10 @@ export abstract class IChatEngine {
     topic: string,
     payload: JsonRpcRequest<ChatClientTypes.Message>
   ): Promise<void>;
+
+  protected abstract onRejectedChatInvite(params: {
+    topic: string;
+  }): Promise<void>;
 
   protected abstract onSendMessageResponse(
     topic: string,

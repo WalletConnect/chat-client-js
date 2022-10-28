@@ -101,10 +101,14 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  public reject() {
-    return Promise.resolve();
-  }
-
+  public reject: IChatClient["reject"] = async (params) => {
+    try {
+      await this.engine.reject(params);
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
   public message: IChatClient["message"] = async (params) => {
     try {
       return await this.engine.sendMessage(params);

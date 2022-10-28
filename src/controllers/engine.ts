@@ -232,6 +232,31 @@ export class ChatEngine extends IChatEngine {
     return chatThreadTopic;
   };
 
+  public reject: IChatEngine["reject"] = async ({ id }) => {
+    const invite = this.client.chatInvites.get(id);
+    const { publicKey: selfInvitePublicKey } = this.client.chatKeys.get(
+      SELF_INVITE_PUBLIC_KEY_NAME
+    );
+
+    const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
+      selfInvitePublicKey,
+      invite.publicKey
+    );
+    const symKeyI = this.client.core.crypto.keychain.get(topicSymKeyI);
+    const responseTopic = hashKey(symKeyI);
+    console.log("reject > symKeyI", symKeyI);
+    console.log("reject > responseTopic:", responseTopic);
+
+    await this.sendError(id, responseTopic, getSdkError("USER_REJECTED"));
+
+    await this.client.chatInvites.delete(id, {
+      code: -1,
+      message: "Invite rejected.",
+    });
+
+    console.log("reject > chatInvites.delete:", id);
+  };
+
   public sendMessage: IChatEngine["sendMessage"] = async ({
     topic,
     payload,
@@ -498,7 +523,22 @@ export class ChatEngine extends IChatEngine {
       });
     } else if (isJsonRpcError(payload)) {
       this.client.logger.error(payload.error);
+      if (payload.error.message === getSdkError("USER_REJECTED").message) {
+        console.log("rejected invite... deleting", payload);
+        this.onRejectedChatInvite({ topic });
+      }
     }
+  };
+
+  protected onRejectedChatInvite: IChatEngine["onRejectedChatInvite"] = async ({
+    topic,
+  }) => {
+    await this.client.chatThreadsPending.delete(topic, {
+      code: -1,
+      message: "Invite rejected.",
+    });
+
+    console.log("reject > chatThreadsPending.delete:", topic);
   };
 
   protected onIncomingMessage: IChatEngine["onIncomingMessage"] = async (
