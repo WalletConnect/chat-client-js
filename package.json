@@ -16,6 +16,7 @@
     "test": "jest --runInBand",
     "test:watch": "jest --runInBand --watch",
     "test:coverage": "jest --runInBand --coverage",
+    "test:canary": "jest ./test/canary",
     "lint:scripts": "eslint . --ext .ts",
     "lint:styles": "stylelint ./**/*.{css,scss}",
     "format:scripts": "prettier . --write",
