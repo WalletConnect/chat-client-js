@@ -1,3 +1,4 @@
+/* eslint-disable no-async-promise-executor */
 import { ChatClient } from "../../src/client";
 import { ChatClientTypes } from "../../src/types";
 import { disconnectSocket } from "./../helpers/ws";
@@ -7,52 +8,33 @@ const TEST_CLIENT_ACCOUNT =
 const TEST_PEER_ACCOUNT = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
 
 describe("ChatClient Canary", () => {
-  let client: ChatClient;
-  let peer: ChatClient;
-  // const environment = process.env.ENVIRONMENT || "dev";
-  // const region = process.env.REGION || "unknown";
-
-  let registerAddressLatencyMs: number,
-    resolveAddressLatencyMs: number,
-    chatInviteLatencyMs: number,
-    chatJoinedLatencyMs: number,
-    chatMessageLatencyMs: number,
-    chatLeaveLatencyMs = 0;
-  const start = Date.now();
-  beforeEach(async () => {
-    client = await ChatClient.init({
-      logger: "error",
-      relayUrl: process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com",
-      projectId: process.env.TEST_PROJECT_ID,
-      storageOptions: {
-        database: ":memory:",
-      },
-    });
-
-    peer = await ChatClient.init({
-      logger: "error",
-      relayUrl: process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com",
-      projectId: process.env.TEST_PROJECT_ID,
-      storageOptions: {
-        database: ":memory:",
-      },
-    });
-  });
-
-  afterEach(() => {
-    disconnectSocket(client.core);
-    disconnectSocket(peer.core);
-  });
-
-  it("can be instantiated", async () => {
-    expect(client instanceof ChatClient).toBe(true);
-    expect(client.core).toBeDefined();
-    expect(client.events).toBeDefined();
-    expect(client.logger).toBeDefined();
-    expect(client.chatMessages).toBeDefined();
-  });
+  let registerAddressLatencyMs = 0;
+  let resolveAddressLatencyMs = 0;
+  let chatInviteLatencyMs = 0;
+  let chatJoinedLatencyMs = 0;
+  let chatMessageLatencyMs = 0;
+  let chatLeaveLatencyMs = 0;
 
   it("should register -> resolve -> send message -> leave chat", async () => {
+    const start = Date.now();
+    const client = await ChatClient.init({
+      logger: "error",
+      relayUrl: process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com",
+      projectId: process.env.TEST_PROJECT_ID,
+      storageOptions: {
+        database: ":memory:",
+      },
+    });
+
+    const peer = await ChatClient.init({
+      logger: "error",
+      relayUrl: process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com",
+      projectId: process.env.TEST_PROJECT_ID,
+      storageOptions: {
+        database: ":memory:",
+      },
+    });
+
     const publicKey = await client.register({
       account: TEST_CLIENT_ACCOUNT,
     });
@@ -93,13 +75,13 @@ describe("ChatClient Canary", () => {
           resolve();
         });
       }),
-      new Promise<void>((resolve) => {
+      new Promise<void>(async (resolve) => {
         const invite: ChatClientTypes.PartialInvite = {
           message: "hey let's chat",
           account: TEST_CLIENT_ACCOUNT,
         };
 
-        client.invite({
+        await client.invite({
           account: TEST_PEER_ACCOUNT,
           invite,
         });
@@ -133,9 +115,9 @@ describe("ChatClient Canary", () => {
           resolve();
         });
       }),
-      new Promise<void>((resolve) => {
-        client.message({ topic, payload: clientMessagePayload });
-        peer.message({ topic, payload: peerMessagePayload });
+      new Promise<void>(async (resolve) => {
+        await client.message({ topic, payload: clientMessagePayload });
+        await peer.message({ topic, payload: peerMessagePayload });
         resolve();
       }),
     ]);
@@ -151,13 +133,16 @@ describe("ChatClient Canary", () => {
           resolve();
         });
       }),
-      new Promise<void>((resolve) => {
-        client.leave({ topic });
+      new Promise<void>(async (resolve) => {
+        await client.leave({ topic });
         resolve();
       }),
     ]);
 
-    console.log("ms delay", {
+    await disconnectSocket(client.core);
+    await disconnectSocket(peer.core);
+
+    console.log({
       registerAddressLatencyMs,
       resolveAddressLatencyMs,
       chatInviteLatencyMs,
