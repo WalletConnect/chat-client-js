@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-async-promise-executor */
-import { ChatClient } from "../../src/client";
-import { ChatClientTypes } from "../../src/types";
+import { ChatClient } from "./../../src/client";
+import { ChatClientTypes } from "./../../src/types";
 import { disconnectSocket } from "./../helpers/ws";
 
 const TEST_CLIENT_ACCOUNT =
