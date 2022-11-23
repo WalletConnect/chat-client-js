@@ -16,7 +16,7 @@
     "dapp"
   ],
   "author": "WalletConnect, Inc. <walletconnect.com>",
-  "homepage": "https://github.com/walletconnect/auth-client-js/",
+  "homepage": "https://github.com/walletconnect/chat-client-js/",
   "license": "Apache-2.0",
   "workspaces": [
     "packages/chat-client"
