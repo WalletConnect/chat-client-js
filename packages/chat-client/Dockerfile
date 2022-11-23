@@ -11,6 +11,6 @@ WORKDIR /
 
 COPY ./ ./
 RUN npm ci
-RUN npm run build
+WORKDIR /packages/chat-client/
 
 CMD ["node", "-v"]

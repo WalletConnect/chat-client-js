@@ -1,62 +1,72 @@
 {
   "name": "@walletconnect/chat-client",
-  "description": "Chat Client for WalletConnect Protocol",
+  "description": "WalletConnect Chat Client",
   "version": "0.1.6",
+  "private": true,
+  "keywords": [
+    "wallet",
+    "walletconnect",
+    "ethereum",
+    "jsonrpc",
+    "mobile",
+    "qrcode",
+    "web3",
+    "crypto",
+    "cryptocurrency",
+    "dapp"
+  ],
   "author": "WalletConnect, Inc. <walletconnect.com>",
-  "homepage": "https://github.com/walletconnect/walletconnect-monorepo/",
-  "main": "./dist/chat-client.cjs",
-  "module": "./dist/chat-client.mjs",
-  "types": "./dist/chat-client.d.ts",
-  "files": [
-    "dist"
+  "homepage": "https://github.com/walletconnect/auth-client-js/",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/chat-client"
   ],
   "scripts": {
-    "dev": "vite --host",
-    "build": "tsc && vite build && dts-bundle-generator --config ./dts-bundle-generator.config.ts",
-    "test": "jest --runInBand",
-    "test:watch": "jest --runInBand --watch",
-    "test:coverage": "jest --runInBand --coverage",
-    "canary": "jest --runInBand --forceExit --detectOpenHandles ./test/canary",
-    "lint:scripts": "eslint . --ext .ts",
-    "lint:styles": "stylelint ./**/*.{css,scss}",
-    "format:scripts": "prettier . --write",
-    "format:styles": "stylelint ./**/*.{css,scss} --fix",
-    "format": "npm run format:scripts && npm run format:styles",
-    "prepublishOnly": "npm run build",
-    "npm-publish": "npm publish --access public"
+    "clean": "npm run clean --workspaces",
+    "lint": "npm run lint --workspaces",
+    "prettier": "npm run prettier --workspaces",
+    "prettier:write": "npm run prettier:write --workspaces",
+    "build": "npm run clean --workspaces; npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "canary": "npm run canary --workspaces",
+    "test:watch": "npm run test:watch --workspaces",
+    "npm-publish": "npm publish --access public --workspaces",
+    "npm-publish:canary": "npm publish --access public --tag canary --workspaces",
+    "format:scripts": "npm run format:scripts ---workspaces"
   },
-  "dependencies": {
-    "@walletconnect/core": "2.0.0-rc.4",
-    "@walletconnect/jsonrpc-utils": "^1.0.3",
-    "@walletconnect/logger": "^1.0.1",
-    "@walletconnect/utils": "2.0.0-rc.4",
-    "axios": "^0.27.2",
-    "events": "^3.3.0",
-    "pino": "^8.0.0"
+  "engines": {
+    "node": ">=14 <17"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/walletconnect/chat-client-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/walletconnect/chat-client-js/issues"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.1",
-    "@types/jsdom": "^16.2.14",
-    "@types/node": "^17.0.23",
-    "@typescript-eslint/eslint-plugin": "^5.16.0",
-    "@typescript-eslint/parser": "^5.16.0",
-    "@walletconnect/jsonrpc-types": "^1.0.1",
-    "@walletconnect/types": "2.0.0-rc.4",
-    "better-sqlite3": "^7.5.3",
-    "dts-bundle-generator": "^6.5.0",
-    "eslint": "^8.11.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.0.0",
-    "husky": "^7.0.4",
-    "jest": "^27.5.1",
-    "lint-staged": "^12.3.7",
-    "lokijs": "^1.5.12",
-    "prettier": "^2.6.1",
-    "stylelint": "^14.6.1",
-    "stylelint-config-recommended": "^7.0.0",
-    "stylelint-config-sass-guidelines": "^9.0.1",
-    "ts-jest": "^27.1.4",
-    "typescript": "^4.5.4",
-    "vite": "^2.8.0"
+    "@rollup/plugin-commonjs": "22.0.1",
+    "@rollup/plugin-node-resolve": "13.3.0",
+    "@types/node": "18.6.1",
+    "@types/pino": "6.3.3",
+    "@types/sinon": "10.0.13",
+    "@typescript-eslint/eslint-plugin": "5.30.7",
+    "@typescript-eslint/parser": "5.30.7",
+    "eslint": "8.20.0",
+    "eslint-config-prettier": "8.5.0",
+    "eslint-config-standard": "17.0.0",
+    "eslint-plugin-import": "2.26.0",
+    "eslint-plugin-node": "11.1.0",
+    "eslint-plugin-prettier": "4.2.1",
+    "eslint-plugin-promise": "6.0.0",
+    "eslint-plugin-react": "7.30.1",
+    "eslint-plugin-standard": "5.0.0",
+    "prettier": "2.7.1",
+    "rollup": "2.77.0",
+    "rollup-plugin-esbuild": "4.9.1",
+    "rollup-plugin-polyfill-node": "0.10.2",
+    "sinon": "14.0.0",
+    "typescript": "4.7.4",
+    "vitest": "0.19.0"
   }
 }

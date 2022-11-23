@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-async-promise-executor */
-import { ChatClient } from "./../../src/client";
+import { expect, describe, it } from "vitest";
+
+import { ChatClient } from "./../../src";
 import { ChatClientTypes } from "./../../src/types";
 import { disconnectSocket } from "./../helpers/ws";
 

@@ -1,0 +1,59 @@
+{
+  "name": "@walletconnect/chat-client",
+  "description": "Chat Client for WalletConnect Protocol",
+  "version": "0.1.6",
+  "author": "WalletConnect, Inc. <walletconnect.com>",
+  "homepage": "https://github.com/walletconnect/walletconnect-monorepo/",
+  "main": "./dist/chat-client.cjs",
+  "module": "./dist/chat-client.mjs",
+  "types": "./dist/chat-client.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build:pre": "npm run clean",
+    "build:types": "tsc",
+    "build:source": "rollup --config rollup.config.js",
+    "build": "npm run build:pre; npm run build:source; npm run build:types",
+    "lint": "eslint -c '../../.eslintrc' --fix './src/**/*.ts'",
+    "prettier": "prettier --check '{src,test}/**/*.{js,ts,jsx,tsx}'",
+    "prettier:write": "prettier --check '{src,test}/**/*.{js,ts,jsx,tsx}' --write",
+    "test:pre": "rm -rf ./test/test.db",
+    "test:run": "vitest run --dir test/client",
+    "test": "npm run test:pre; npm run test:run",
+    "test:watch": "vitest watch --dir test",
+    "canary": "vitest run --dir test/canary",
+    "prepublishOnly": "npm run build",
+    "format:scripts": "prettier . --write"
+  },
+  "dependencies": {
+    "@walletconnect/core": "2.0.0-rc.4",
+    "@walletconnect/jsonrpc-utils": "^1.0.3",
+    "@walletconnect/logger": "^1.0.1",
+    "@walletconnect/utils": "2.0.0-rc.4",
+    "axios": "^0.27.2",
+    "events": "^3.3.0",
+    "pino": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^16.2.14",
+    "@types/node": "^17.0.23",
+    "@typescript-eslint/eslint-plugin": "^5.16.0",
+    "@typescript-eslint/parser": "^5.16.0",
+    "@walletconnect/jsonrpc-types": "^1.0.1",
+    "@walletconnect/types": "2.0.0-rc.4",
+    "eslint": "^8.11.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.7",
+    "lokijs": "^1.5.12",
+    "prettier": "^2.6.1",
+    "stylelint": "^14.6.1",
+    "stylelint-config-recommended": "^7.0.0",
+    "stylelint-config-sass-guidelines": "^9.0.1",
+    "typescript": "^4.5.4",
+    "vite": "^3.2.4"
+  }
+}
