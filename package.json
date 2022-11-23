@@ -34,9 +34,6 @@
     "npm-publish:canary": "npm publish --access public --tag canary --workspaces",
     "format:scripts": "npm run format:scripts ---workspaces"
   },
-  "engines": {
-    "node": ">=14 <17"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/walletconnect/chat-client-js.git"
