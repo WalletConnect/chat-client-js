@@ -54,6 +54,7 @@
     "stylelint-config-recommended": "^7.0.0",
     "stylelint-config-sass-guidelines": "^9.0.1",
     "typescript": "^4.5.4",
-    "vite": "^3.2.4"
+    "vite": "^3.2.4",
+    "aws-sdk": "^2.1169.0"
   }
 }
