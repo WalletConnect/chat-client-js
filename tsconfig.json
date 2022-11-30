@@ -30,8 +30,7 @@
     "strict": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
-    "strictPropertyInitialization": true,
-    "suppressImplicitAnyIndexErrors": true
+    "strictPropertyInitialization": true
   },
   "include": ["**/package.json", "packages", "providers"]
 }

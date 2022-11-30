@@ -1,5 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-async-promise-executor */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 import { expect, describe, it } from "vitest";
 
 import { ChatClient } from "./../../src";
