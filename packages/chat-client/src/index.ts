@@ -1,7 +1,7 @@
-// export * from "./constants";
-// export default ChatClient;
-
-export { ChatClient } from "./client";
+import { ChatClient as Client } from "./client";
 
 export * from "./constants";
 export * from "./types";
+
+export const ChatClient = Client;
+export default Client;
