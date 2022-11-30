@@ -1,7 +1,8 @@
+import { expect, describe, it, beforeEach, afterEach, vi } from "vitest";
 import { generateRandomBytes32 } from "@walletconnect/utils";
-import { ChatClient } from "../src/client";
-import { ChatClientTypes } from "../src/types";
-import { disconnectSocket } from "./helpers/ws";
+import { ChatClient } from "../../src";
+import { ChatClientTypes } from "../../src/types";
+import { disconnectSocket } from "../helpers/ws";
 
 const TEST_CLIENT_ACCOUNT =
   "eip155:1:0xf07A0e1454771826472AE22A212575296f309c8C";
@@ -90,7 +91,7 @@ describe("ChatClient", () => {
       account: TEST_PEER_ACCOUNT,
     });
 
-    client.resolve = jest.fn(() => Promise.resolve(peerInvitePublicKey));
+    client.resolve = vi.fn(() => Promise.resolve(peerInvitePublicKey));
 
     peer.on("chat_invite", async (args) => {
       const { id } = args;
@@ -190,7 +191,7 @@ describe("ChatClient", () => {
         account: TEST_PEER_ACCOUNT,
       });
 
-      client.resolve = jest.fn(() => Promise.resolve(peerInvitePublicKey));
+      client.resolve = vi.fn(() => Promise.resolve(peerInvitePublicKey));
 
       peer.on("chat_invite", async (args) => {
         const { id } = args;

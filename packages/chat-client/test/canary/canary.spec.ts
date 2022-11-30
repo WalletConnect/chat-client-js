@@ -1,12 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-async-promise-executor */
-import { ChatClient } from "./../../src/client";
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
+import { expect, describe, it } from "vitest";
+import { uploadCanaryResultsToCloudWatch } from "../utils";
+
+import { ChatClient } from "./../../src";
 import { ChatClientTypes } from "./../../src/types";
 import { disconnectSocket } from "./../helpers/ws";
 
 const TEST_CLIENT_ACCOUNT =
   "eip155:1:0xf07A0e1454771826472AE22A212575296f309c8C";
 const TEST_PEER_ACCOUNT = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
+const environment = process.env.ENVIRONMENT || "dev";
+const region = process.env.REGION || "unknown";
+const TEST_RELAY_URL =
+  process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com";
+const metricsPrefix = "HappyPath.chat";
 
 describe("ChatClient Canary", () => {
   let registerAddressLatencyMs = 0;
@@ -151,5 +160,27 @@ describe("ChatClient Canary", () => {
       chatMessageLatencyMs,
       chatLeaveLatencyMs,
     });
+
+    if (environment !== "dev") {
+      const successful = true;
+      const latencyMs = Date.now() - start;
+
+      await uploadCanaryResultsToCloudWatch(
+        environment,
+        region,
+        TEST_RELAY_URL,
+        metricsPrefix,
+        successful,
+        latencyMs,
+        [
+          { registerAddressLatency: registerAddressLatencyMs },
+          { resolveAddressLatency: resolveAddressLatencyMs },
+          { chatInviteLatency: chatInviteLatencyMs },
+          { chatJoinedLatency: chatJoinedLatencyMs },
+          { chatMessageLatency: chatMessageLatencyMs },
+          { chatLeaveLatency: chatLeaveLatencyMs },
+        ]
+      );
+    }
   });
 });
