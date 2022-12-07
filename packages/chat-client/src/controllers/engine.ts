@@ -344,7 +344,10 @@ export class ChatEngine extends IChatEngine {
   ) => {
     const payload = formatJsonRpcError(id, error);
     const message = await this.client.core.crypto.encode(topic, payload, opts);
-    await this.client.core.relayer.publish(topic, message);
+    const record = await this.client.history.get(topic, id);
+    const rpcOpts =
+      ENGINE_RPC_OPTS[record.request.method as JsonRpcTypes.WcMethod].res;
+    await this.client.core.relayer.publish(topic, message, rpcOpts);
     await this.client.history.resolve(payload);
   };
 
