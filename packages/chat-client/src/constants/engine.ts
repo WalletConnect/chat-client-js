@@ -1,17 +1,12 @@
 import { ONE_DAY, THIRTY_SECONDS } from "@walletconnect/time";
+import { RelayerTypes } from "@walletconnect/types";
 import { JsonRpcTypes } from "../types";
 
 export const KEYSERVER_URL = "https://keys.walletconnect.com";
 
-interface Opts {
-  tag: number;
-  ttl: number;
-  prompt: boolean;
-}
-
 export const ENGINE_RPC_OPTS: Record<
   JsonRpcTypes.WcMethod,
-  { req: Opts; res: Opts }
+  { req: RelayerTypes.PublishOptions; res: RelayerTypes.PublishOptions }
 > = {
   wc_chatInvite: {
     req: {
