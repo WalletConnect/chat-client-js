@@ -19,8 +19,7 @@ import axios from "axios";
 import EventEmitter from "events";
 import { ENGINE_RPC_OPTS, KEYSERVER_URL } from "../constants";
 
-import { IChatClient, IChatEngine } from "../types";
-import { JsonRpcTypes } from "../types/jsonrpc";
+import { IChatClient, IChatEngine, JsonRpcTypes } from "../types";
 import { engineEvent } from "../utils/engineUtil";
 
 const SELF_INVITE_PUBLIC_KEY_NAME = "selfInvitePublicKey";
