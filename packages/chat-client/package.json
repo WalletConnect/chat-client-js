@@ -1,7 +1,7 @@
 {
   "name": "@walletconnect/chat-client",
   "description": "Chat Client for WalletConnect Protocol",
-  "version": "0.1.6",
+  "version": "0.1.7-canary.0",
   "author": "WalletConnect, Inc. <walletconnect.com>",
   "homepage": "https://github.com/walletconnect/walletconnect-monorepo/",
   "main": "./dist/chat-client.cjs",
@@ -43,6 +43,7 @@
     "@typescript-eslint/parser": "^5.16.0",
     "@walletconnect/jsonrpc-types": "^1.0.1",
     "@walletconnect/types": "2.0.0-rc.4",
+    "aws-sdk": "^2.1169.0",
     "eslint": "^8.11.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.0.0",
@@ -54,7 +55,6 @@
     "stylelint-config-recommended": "^7.0.0",
     "stylelint-config-sass-guidelines": "^9.0.1",
     "typescript": "^4.5.4",
-    "vite": "^3.2.4",
-    "aws-sdk": "^2.1169.0"
+    "vite": "^3.2.4"
   }
 }
