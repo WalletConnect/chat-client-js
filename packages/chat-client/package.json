@@ -4,9 +4,10 @@
   "version": "0.1.6",
   "author": "WalletConnect, Inc. <walletconnect.com>",
   "homepage": "https://github.com/walletconnect/walletconnect-monorepo/",
-  "main": "./dist/chat-client.cjs",
-  "module": "./dist/chat-client.mjs",
-  "types": "./dist/chat-client.d.ts",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "unpkg": "dist/index.umd.js",
+  "types": "dist/types/index.d.ts",
   "files": [
     "dist"
   ],
