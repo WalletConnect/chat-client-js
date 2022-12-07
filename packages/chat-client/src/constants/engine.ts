@@ -1,4 +1,5 @@
 import { ONE_DAY, THIRTY_SECONDS } from "@walletconnect/time";
+import { JsonRpcTypes } from "../types";
 
 export const KEYSERVER_URL = "https://keys.walletconnect.com";
 
@@ -8,7 +9,10 @@ interface Opts {
   prompt: boolean;
 }
 
-export const ENGINE_RPC_OPTS: Record<string, { req: Opts; res: Opts }> = {
+export const ENGINE_RPC_OPTS: Record<
+  JsonRpcTypes.WcMethod,
+  { req: Opts; res: Opts }
+> = {
   wc_chatInvite: {
     req: {
       tag: 2000,
