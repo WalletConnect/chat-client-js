@@ -1,6 +1,6 @@
-export const KEYSERVER_URL = "https://keys.walletconnect.com";
+import { ONE_DAY, THIRTY_SECONDS } from "@walletconnect/time";
 
-const ONE_DAY = 86400;
+export const KEYSERVER_URL = "https://keys.walletconnect.com";
 
 interface Opts {
   tag: number;
@@ -48,13 +48,13 @@ export const ENGINE_RPC_OPTS: Record<string, { req: Opts; res: Opts }> = {
   wc_chatPing: {
     req: {
       tag: 2006,
-      prompt: true,
-      ttl: ONE_DAY,
+      prompt: false,
+      ttl: THIRTY_SECONDS,
     },
     res: {
       tag: 2007,
       prompt: false,
-      ttl: ONE_DAY,
+      ttl: THIRTY_SECONDS,
     },
   },
 };
