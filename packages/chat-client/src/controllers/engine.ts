@@ -17,10 +17,9 @@ import {
 } from "@walletconnect/utils";
 import axios from "axios";
 import EventEmitter from "events";
-import { KEYSERVER_URL } from "../constants";
+import { ENGINE_RPC_OPTS, KEYSERVER_URL } from "../constants";
 
-import { IChatClient, IChatEngine } from "../types";
-import { JsonRpcTypes } from "../types/jsonrpc";
+import { IChatClient, IChatEngine, JsonRpcTypes } from "../types";
 import { engineEvent } from "../utils/engineUtil";
 
 const SELF_INVITE_PUBLIC_KEY_NAME = "selfInvitePublicKey";
@@ -316,7 +315,8 @@ export class ChatEngine extends IChatEngine {
   ) => {
     const payload = formatJsonRpcRequest(method, params);
     const message = await this.client.core.crypto.encode(topic, payload, opts);
-    await this.client.core.relayer.publish(topic, message);
+    const rpcOpts = ENGINE_RPC_OPTS[method].req;
+    await this.client.core.relayer.publish(topic, message, rpcOpts);
     this.client.history.set(topic, payload);
 
     return payload.id;
@@ -330,7 +330,10 @@ export class ChatEngine extends IChatEngine {
   ) => {
     const payload = formatJsonRpcResult(id, result);
     const message = await this.client.core.crypto.encode(topic, payload, opts);
-    await this.client.core.relayer.publish(topic, message);
+    const record = await this.client.history.get(topic, id);
+    const rpcOpts =
+      ENGINE_RPC_OPTS[record.request.method as JsonRpcTypes.WcMethod].res;
+    await this.client.core.relayer.publish(topic, message, rpcOpts);
     await this.client.history.resolve(payload);
   };
 
@@ -342,7 +345,10 @@ export class ChatEngine extends IChatEngine {
   ) => {
     const payload = formatJsonRpcError(id, error);
     const message = await this.client.core.crypto.encode(topic, payload, opts);
-    await this.client.core.relayer.publish(topic, message);
+    const record = await this.client.history.get(topic, id);
+    const rpcOpts =
+      ENGINE_RPC_OPTS[record.request.method as JsonRpcTypes.WcMethod].res;
+    await this.client.core.relayer.publish(topic, message, rpcOpts);
     await this.client.history.resolve(payload);
   };
 
