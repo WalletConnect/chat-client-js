@@ -1,22 +1,22 @@
-import { Core } from "@walletconnect/core";
+import { Core, Store } from "@walletconnect/core";
 import {
+  pino,
   generateChildLogger,
   getDefaultLoggerOptions,
 } from "@walletconnect/logger";
 import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
-import pino from "pino";
-
 import {
-  ChatMessages,
-  ChatEngine,
-  JsonRpcHistory,
-  ChatInvites,
-  ChatThreads,
-  ChatThreadsPending,
-} from "./controllers";
-import { ChatKeys } from "./controllers/chatKeys";
-import { IChatClient } from "./types";
+  CHAT_CLIENT_CONTEXT,
+  CHAT_CLIENT_STORAGE_PREFIX,
+  CHAT_MESSAGES_CONTEXT,
+  CHAT_THREADS_CONTEXT,
+  CHAT_THREADS_PENDING_CONTEXT,
+} from "./constants";
+import { CHAT_KEYS_CONTEXT } from "./constants/chatKeys";
+
+import { ChatEngine } from "./controllers";
+import { ChatClientTypes, IChatClient } from "./types";
 
 // FIXME: ChatClient not reading existing chatMessages from localStorage for some reason.
 export class ChatClient extends IChatClient {
@@ -31,7 +31,6 @@ export class ChatClient extends IChatClient {
   public chatMessages: IChatClient["chatMessages"];
   public chatKeys: IChatClient["chatKeys"];
   public engine: IChatClient["engine"];
-  public history: IChatClient["history"];
 
   static async init(opts?: Record<string, any>) {
     const client = new ChatClient(opts);
@@ -54,12 +53,37 @@ export class ChatClient extends IChatClient {
 
     this.core = new Core(opts);
     this.logger = generateChildLogger(logger, this.name);
-    this.chatInvites = new ChatInvites(this.core, this.logger);
-    this.chatThreads = new ChatThreads(this.core, this.logger);
-    this.chatThreadsPending = new ChatThreadsPending(this.core, this.logger);
-    this.chatMessages = new ChatMessages(this.core, this.logger);
-    this.chatKeys = new ChatKeys(this.core, this.logger);
-    this.history = new JsonRpcHistory(this.core, this.logger);
+    this.chatInvites = new Store(
+      this.core,
+      this.logger,
+      CHAT_CLIENT_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX,
+      (invite: ChatClientTypes.Invite) => invite.id
+    );
+    this.chatThreads = new Store(
+      this.core,
+      this.logger,
+      CHAT_THREADS_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX
+    );
+    this.chatThreadsPending = new Store(
+      this.core,
+      this.logger,
+      CHAT_THREADS_PENDING_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX
+    );
+    this.chatMessages = new Store(
+      this.core,
+      this.logger,
+      CHAT_MESSAGES_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX
+    );
+    this.chatKeys = new Store(
+      this.core,
+      this.logger,
+      CHAT_KEYS_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX
+    );
     this.engine = new ChatEngine(this);
   }
 
@@ -196,7 +220,6 @@ export class ChatClient extends IChatClient {
       await this.chatThreadsPending.init();
       await this.chatMessages.init();
       await this.chatKeys.init();
-      await this.history.init();
       await this.engine.init();
       this.logger.info(`ChatClient Initialization Success`);
     } catch (error: any) {
