@@ -317,7 +317,7 @@ export class ChatEngine extends IChatEngine {
     const message = await this.client.core.crypto.encode(topic, payload, opts);
     const rpcOpts = ENGINE_RPC_OPTS[method].req;
     await this.client.core.relayer.publish(topic, message, rpcOpts);
-    this.client.history.set(topic, payload);
+    this.client.core.history.set(topic, payload);
 
     return payload.id;
   };
@@ -330,11 +330,11 @@ export class ChatEngine extends IChatEngine {
   ) => {
     const payload = formatJsonRpcResult(id, result);
     const message = await this.client.core.crypto.encode(topic, payload, opts);
-    const record = await this.client.history.get(topic, id);
+    const record = await this.client.core.history.get(topic, id);
     const rpcOpts =
       ENGINE_RPC_OPTS[record.request.method as JsonRpcTypes.WcMethod].res;
     await this.client.core.relayer.publish(topic, message, rpcOpts);
-    await this.client.history.resolve(payload);
+    await this.client.core.history.resolve(payload);
   };
 
   protected sendError: IChatEngine["sendError"] = async (
@@ -345,11 +345,11 @@ export class ChatEngine extends IChatEngine {
   ) => {
     const payload = formatJsonRpcError(id, error);
     const message = await this.client.core.crypto.encode(topic, payload, opts);
-    const record = await this.client.history.get(topic, id);
+    const record = await this.client.core.history.get(topic, id);
     const rpcOpts =
       ENGINE_RPC_OPTS[record.request.method as JsonRpcTypes.WcMethod].res;
     await this.client.core.relayer.publish(topic, message, rpcOpts);
-    await this.client.history.resolve(payload);
+    await this.client.core.history.resolve(payload);
   };
 
   protected subscribeToSelfInviteTopic = async () => {
@@ -403,10 +403,10 @@ export class ChatEngine extends IChatEngine {
           receiverPublicKey: selfInvitePublicKeyEntry.publicKey,
         });
         if (isJsonRpcRequest(payload)) {
-          this.client.history.set(topic, payload);
+          this.client.core.history.set(topic, payload);
           this.onRelayEventRequest({ topic, payload });
         } else if (isJsonRpcResponse(payload)) {
-          await this.client.history.resolve(payload);
+          await this.client.core.history.resolve(payload);
           this.onRelayEventResponse({ topic, payload });
         }
       }
@@ -438,7 +438,7 @@ export class ChatEngine extends IChatEngine {
     event
   ) => {
     const { topic, payload } = event;
-    const record = await this.client.history.get(topic, payload.id);
+    const record = await this.client.core.history.get(topic, payload.id);
     const resMethod = record.request.method as JsonRpcTypes.WcMethod;
 
     switch (resMethod) {

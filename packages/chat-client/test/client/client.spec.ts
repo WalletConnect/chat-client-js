@@ -1,6 +1,6 @@
 import { expect, describe, it, beforeEach, afterEach, vi } from "vitest";
 import { generateRandomBytes32 } from "@walletconnect/utils";
-import { ChatClient } from "../../src";
+import ChatClient from "../../src";
 import { ChatClientTypes } from "../../src/types";
 import { disconnectSocket } from "../helpers/ws";
 
@@ -27,8 +27,7 @@ describe("ChatClient", () => {
   beforeEach(async () => {
     client = await ChatClient.init({
       logger: "error",
-      relayUrl:
-        process.env.TEST_RELAY_URL || "wss://staging.relay.walletconnect.com",
+      relayUrl: "wss://relay.walletconnect.com",
       projectId: process.env.TEST_PROJECT_ID,
       storageOptions: {
         database: ":memory:",
@@ -37,8 +36,7 @@ describe("ChatClient", () => {
 
     peer = await ChatClient.init({
       logger: "error",
-      relayUrl:
-        process.env.TEST_RELAY_URL || "wss://staging.relay.walletconnect.com",
+      relayUrl: "wss://relay.walletconnect.com",
       projectId: process.env.TEST_PROJECT_ID,
       storageOptions: {
         database: ":memory:",

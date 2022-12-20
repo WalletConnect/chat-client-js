@@ -1,6 +1,6 @@
-import { ICore, IJsonRpcHistory, IStore } from "@walletconnect/types";
+import { ICore, IStore } from "@walletconnect/types";
 import EventEmitter from "events";
-import { Logger } from "pino";
+import { Logger } from "@walletconnect/logger";
 import { IChatInvites } from "./chatInvites";
 import { IChatMessages } from "./chatMessages";
 import { IChatThreads } from "./chatThreads";
@@ -85,7 +85,6 @@ export abstract class IChatClient {
   public abstract chatMessages: IChatMessages;
   public abstract chatKeys: IStore<string, any>;
   public abstract engine: IChatEngine;
-  public abstract history: IJsonRpcHistory;
 
   constructor(public opts?: Record<string, any>) {}
 
