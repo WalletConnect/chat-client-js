@@ -20,28 +20,24 @@ const waitForEvent = async (checkForEvent: (...args: any[]) => boolean) => {
   });
 };
 
+const opts = {
+  logger: "error",
+  relayUrl:
+    process.env.TEST_RELAY_URL || "wss://staging.relay.walletconnect.com",
+  projectId: process.env.TEST_PROJECT_ID,
+  storageOptions: {
+    database: ":memory:",
+  },
+};
+
 describe("ChatClient", () => {
   let client: ChatClient;
   let peer: ChatClient;
 
   beforeEach(async () => {
-    client = await ChatClient.init({
-      logger: "error",
-      relayUrl: "wss://relay.walletconnect.com",
-      projectId: process.env.TEST_PROJECT_ID,
-      storageOptions: {
-        database: ":memory:",
-      },
-    });
+    client = await ChatClient.init(opts);
 
-    peer = await ChatClient.init({
-      logger: "error",
-      relayUrl: "wss://relay.walletconnect.com",
-      projectId: process.env.TEST_PROJECT_ID,
-      storageOptions: {
-        database: ":memory:",
-      },
-    });
+    peer = await ChatClient.init(opts);
   });
 
   afterEach(async () => {
