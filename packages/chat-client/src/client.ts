@@ -1,6 +1,6 @@
 import { Core, Store } from "@walletconnect/core";
+import pino from "pino";
 import {
-  pino,
   generateChildLogger,
   getDefaultLoggerOptions,
 } from "@walletconnect/logger";
