@@ -229,9 +229,12 @@ describe("ChatClient", () => {
   describe("getInvites", () => {
     it("returns all current invites", async () => {
       const mockInviteId = 1666697147892830;
+      const account = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
+      const id = 1666697147892830;
       const mockInvite = {
+        id,
         message: "hey let's chat",
-        account: "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F",
+        account,
         publicKey:
           "511dc223dcf4b4a0148009785fe5c247d4e9ece7e8bd83db3082d6f1cdc07e16",
       };
@@ -239,14 +242,19 @@ describe("ChatClient", () => {
 
       expect(client.getInvites().size).toBe(1);
       expect(client.getInvites().get(mockInviteId)).toEqual(mockInvite);
+      expect(client.getInvites({ account })).toEqual(
+        new Map([[id, mockInvite]])
+      );
     });
   });
 
   describe("getThreads", () => {
     it("returns all currently active chat threads", async () => {
+      const selfAccount = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
+      const topic = generateRandomBytes32();
       const mockChatThread = {
-        topic: generateRandomBytes32(),
-        selfAccount: "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F",
+        topic,
+        selfAccount,
         peerAccount: "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5FFFF",
       };
       await client.chatThreads.set(mockChatThread.topic, mockChatThread);
@@ -254,6 +262,13 @@ describe("ChatClient", () => {
       expect(client.getThreads().size).toBe(1);
       expect(client.getThreads().get(mockChatThread.topic)).toEqual(
         mockChatThread
+      );
+      expect(client.getThreads({ account: selfAccount })).toEqual(
+        new Map(
+          Object.entries({
+            [topic]: mockChatThread,
+          })
+        )
       );
     });
   });

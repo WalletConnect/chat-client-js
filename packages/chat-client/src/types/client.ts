@@ -129,10 +129,14 @@ export abstract class IChatClient {
   // }): Promise<void>;
 
   // returns all invites matching an account / returns maps of invites indexed by id
-  public abstract getInvites(): Map<number, ChatClientTypes.Invite>;
+  public abstract getInvites(params?: {
+    account: string;
+  }): Map<number, ChatClientTypes.Invite>;
 
   // returns all threads matching an account / returns map of threads indexed by topic
-  public abstract getThreads(): Map<string, ChatClientTypes.Thread>;
+  public abstract getThreads(params?: {
+    account: string;
+  }): Map<string, ChatClientTypes.Thread>;
 
   // returns all messages matching a thread's topic / returns array of messages
   public abstract getMessages(params: {
