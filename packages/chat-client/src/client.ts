@@ -160,18 +160,44 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  public getInvites: IChatClient["getInvites"] = () => {
+  public getInvites: IChatClient["getInvites"] = (params) => {
     try {
-      return this.chatInvites.map;
+      return this.chatInvites
+        .getAll(
+          params?.account
+            ? {
+                account: params.account,
+              }
+            : undefined
+        )
+        .reduce<Map<number, ChatClientTypes.Invite>>((inviteMap, invite) => {
+          if (!invite.id)
+            throw new Error(
+              "Invites need id specified in the map values as well as the keys"
+            );
+          inviteMap.set(invite.id, invite);
+          return inviteMap;
+        }, new Map());
     } catch (error: any) {
       this.logger.error(error.message);
       throw error;
     }
   };
 
-  public getThreads: IChatClient["getThreads"] = () => {
+  public getThreads: IChatClient["getThreads"] = (params) => {
     try {
-      return this.chatThreads.map;
+      return this.chatThreads
+        .getAll(
+          params?.account
+            ? {
+                selfAccount: params.account,
+              }
+            : undefined
+        )
+        .reduce<Map<string, ChatClientTypes.Thread>>((threadMap, thread) => {
+          threadMap.set(thread.topic.toString(), thread);
+          return threadMap;
+        }, new Map());
     } catch (error: any) {
       this.logger.error(error.message);
       throw error;
