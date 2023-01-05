@@ -171,7 +171,11 @@ export class ChatClient extends IChatClient {
             : undefined
         )
         .reduce<Map<number, ChatClientTypes.Invite>>((inviteMap, invite) => {
-          inviteMap.set(invite.id || 0, invite);
+          if (!invite.id)
+            throw new Error(
+              "Invites need id specified in the map values as well as the keys"
+            );
+          inviteMap.set(invite.id, invite);
           return inviteMap;
         }, new Map());
     } catch (error: any) {
