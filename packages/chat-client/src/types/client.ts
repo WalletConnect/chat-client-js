@@ -1,10 +1,6 @@
 import { ICore, IStore } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "@walletconnect/logger";
-import { IChatInvites } from "./chatInvites";
-import { IChatMessages } from "./chatMessages";
-import { IChatThreads } from "./chatThreads";
-import { IChatThreadsPending } from "./chatThreadsPending";
 import { IChatEngine } from "./engine";
 
 export declare namespace ChatClientTypes {
@@ -44,6 +40,12 @@ export declare namespace ChatClientTypes {
     peerAccount: string;
   }
 
+  interface Contact {
+    accountId: string;
+    publicKey: string;
+    displayName?: string;
+  }
+
   interface ChatKey {
     _key: string;
     account: string | null;
@@ -79,10 +81,17 @@ export abstract class IChatClient {
   public abstract core: ICore;
   public abstract events: EventEmitter;
   public abstract logger: Logger;
-  public abstract chatInvites: IChatInvites;
-  public abstract chatThreads: IChatThreads;
-  public abstract chatThreadsPending: IChatThreadsPending;
-  public abstract chatMessages: IChatMessages;
+  public abstract chatInvites: IStore<number, ChatClientTypes.Invite>;
+  public abstract chatContacts: IStore<string, ChatClientTypes.Contact>;
+  public abstract chatThreads: IStore<string, ChatClientTypes.Thread>;
+  public abstract chatThreadsPending: IStore<
+    string,
+    ChatClientTypes.PendingThread
+  >;
+  public abstract chatMessages: IStore<
+    string,
+    { messages: ChatClientTypes.Message[]; topic: string }
+  >;
   public abstract chatKeys: IStore<string, any>;
   public abstract engine: IChatEngine;
 
@@ -142,6 +151,11 @@ export abstract class IChatClient {
   public abstract getMessages(params: {
     topic: string;
   }): ChatClientTypes.Message[];
+
+  public abstract addContact(params: {
+    account: string;
+    publicKey: string;
+  }): Promise<void>;
 
   // ---------- Event Handlers ----------------------------------------------- //
 
