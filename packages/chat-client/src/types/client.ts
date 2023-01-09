@@ -155,7 +155,7 @@ export abstract class IChatClient {
   public abstract addContact(params: {
     account: string;
     publicKey: string;
-  }): Promise<void>;
+  }): void;
 
   // ---------- Event Handlers ----------------------------------------------- //
 
