@@ -40,6 +40,9 @@ export class ChatEngine extends IChatEngine {
         await this.subscribeToSelfInviteTopic();
       }
       this.registerRelayerEvents();
+      this.client.core.pairing.register({
+        methods: Object.keys(ENGINE_RPC_OPTS),
+      });
       // this.registerExpirerEvents();
       this.initialized = true;
     }
