@@ -12,6 +12,7 @@ import {
   CHAT_MESSAGES_CONTEXT,
   CHAT_THREADS_CONTEXT,
   CHAT_THREADS_PENDING_CONTEXT,
+  CHAT_CONTACTS_CONTEXT,
 } from "./constants";
 import { CHAT_KEYS_CONTEXT } from "./constants/chatKeys";
 
@@ -29,6 +30,7 @@ export class ChatClient extends IChatClient {
   public chatThreads: IChatClient["chatThreads"];
   public chatThreadsPending: IChatClient["chatThreadsPending"];
   public chatMessages: IChatClient["chatMessages"];
+  public chatContacts: IChatClient["chatContacts"];
   public chatKeys: IChatClient["chatKeys"];
   public engine: IChatClient["engine"];
 
@@ -82,6 +84,12 @@ export class ChatClient extends IChatClient {
       this.core,
       this.logger,
       CHAT_KEYS_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX
+    );
+    this.chatContacts = new Store(
+      this.core,
+      this.logger,
+      CHAT_CONTACTS_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX
     );
     this.engine = new ChatEngine(this);
@@ -213,6 +221,10 @@ export class ChatClient extends IChatClient {
     }
   };
 
+  public addContact: IChatClient["addContact"] = ({ account, publicKey }) => {
+    this.chatContacts.set(account, { accountId: account, publicKey });
+  };
+
   // ---------- Events ----------------------------------------------- //
 
   public emit: IChatClient["emit"] = (name, listener) => {
@@ -246,6 +258,7 @@ export class ChatClient extends IChatClient {
       await this.chatThreadsPending.init();
       await this.chatMessages.init();
       await this.chatKeys.init();
+      await this.chatContacts.init();
       await this.engine.init();
       this.logger.info(`ChatClient Initialization Success`);
     } catch (error: any) {
