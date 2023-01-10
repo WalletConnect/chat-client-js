@@ -12,12 +12,12 @@ import {
   CHAT_MESSAGES_CONTEXT,
   CHAT_THREADS_CONTEXT,
   CHAT_THREADS_PENDING_CONTEXT,
+  CHAT_CONTACTS_CONTEXT,
 } from "./constants";
 import { CHAT_KEYS_CONTEXT } from "./constants/chatKeys";
 
 import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient } from "./types";
-import { CHAT_CONTACTS_CONTEXT } from "./constants/chatContancts";
 
 // FIXME: ChatClient not reading existing chatMessages from localStorage for some reason.
 export class ChatClient extends IChatClient {
