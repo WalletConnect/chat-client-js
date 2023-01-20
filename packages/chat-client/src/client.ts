@@ -19,7 +19,6 @@ import { CHAT_KEYS_CONTEXT } from "./constants/chatKeys";
 import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient } from "./types";
 
-// FIXME: ChatClient not reading existing chatMessages from localStorage for some reason.
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
 
@@ -34,14 +33,14 @@ export class ChatClient extends IChatClient {
   public chatKeys: IChatClient["chatKeys"];
   public engine: IChatClient["engine"];
 
-  static async init(opts?: Record<string, any>) {
+  static async init(opts?: ChatClientTypes.Options) {
     const client = new ChatClient(opts);
     await client.initialize();
 
     return client;
   }
 
-  constructor(opts?: Record<string, any>) {
+  constructor(opts?: ChatClientTypes.Options) {
     super(opts);
 
     const logger =
@@ -53,7 +52,7 @@ export class ChatClient extends IChatClient {
             })
           );
 
-    this.core = new Core(opts);
+    this.core = opts?.core || new Core(opts);
     this.logger = generateChildLogger(logger, this.name);
     this.chatInvites = new Store(
       this.core,
