@@ -29,13 +29,16 @@
     "format:scripts": "prettier . --write"
   },
   "dependencies": {
+    "@ethersproject/address": "^5.7.0",
     "@walletconnect/core": "^2.1.4",
     "@walletconnect/jsonrpc-utils": "^1.0.3",
     "@walletconnect/logger": "^2.0.1",
     "@walletconnect/time": "^1.0.2",
     "@walletconnect/utils": "^2.1.4",
     "axios": "^0.27.2",
+    "bs58": "^5.0.0",
     "events": "^3.3.0",
+    "multiformats": "^11.0.1",
     "pino": "7.11"
   },
   "devDependencies": {
