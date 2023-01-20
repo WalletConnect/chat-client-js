@@ -19,7 +19,6 @@ import { CHAT_KEYS_CONTEXT } from "./constants/chatKeys";
 import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient } from "./types";
 
-// FIXME: ChatClient not reading existing chatMessages from localStorage for some reason.
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
 
