@@ -1,9 +1,13 @@
-import { ICore, IStore } from "@walletconnect/types";
+import { ICore, IStore, CoreTypes } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "@walletconnect/logger";
 import { IChatEngine } from "./engine";
 
 export declare namespace ChatClientTypes {
+  interface Options extends CoreTypes.Options {
+    core?: ICore;
+  }
+
   // ---------- Data Types ----------------------------------------------- //
   interface PartialInvite {
     message: string;
@@ -95,7 +99,7 @@ export abstract class IChatClient {
   public abstract chatKeys: IStore<string, any>;
   public abstract engine: IChatEngine;
 
-  constructor(public opts?: Record<string, any>) {}
+  constructor(public opts?: ChatClientTypes.Options) {}
 
   // ---------- Public Methods ----------------------------------------------- //
 
