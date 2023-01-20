@@ -18,9 +18,12 @@ import {
 import axios from "axios";
 import EventEmitter from "events";
 import { ENGINE_RPC_OPTS, KEYSERVER_URL } from "../constants";
-
+import * as ed25519 from "@noble/ed25519";
 import { IChatClient, IChatEngine, JsonRpcTypes } from "../types";
 import { engineEvent } from "../utils/engineUtil";
+import { generateJWT } from "../utils/jwtAuth";
+import { generateKeyPair } from "crypto";
+import { isAddress } from "@ethersproject/address";
 
 const SELF_INVITE_PUBLIC_KEY_NAME = "selfInvitePublicKey";
 const INVITE_PROPOSER_PUBLIC_KEY_NAME = "inviteProposerPublicKey";
@@ -28,6 +31,7 @@ const INVITE_PROPOSER_PUBLIC_KEY_NAME = "inviteProposerPublicKey";
 export class ChatEngine extends IChatEngine {
   private initialized = false;
   private events = new EventEmitter();
+  private keyserverUrl = "";
 
   constructor(client: IChatClient) {
     super(client);
@@ -46,6 +50,66 @@ export class ChatEngine extends IChatEngine {
       // this.registerExpirerEvents();
       this.initialized = true;
     }
+  };
+
+  private generateAndStoreED25519KeyPair = async () => {
+    const privateKey = ed25519.utils.randomPrivateKey();
+    const publicKey = await ed25519.getPublicKey(privateKey);
+
+    const pubKeyHex = ed25519.utils.bytesToHex(publicKey).toLowerCase();
+    const privKeyHex = ed25519.utils.bytesToHex(privateKey).toLowerCase();
+
+    this.client.chatKeys.set(SELF_INVITE_PUBLIC_KEY_NAME, {
+      pubKeyHex,
+      privKeyHex,
+    });
+
+    return pubKeyHex;
+  };
+
+  private generateIdAuth = (inviteKey: Uint8Array, accountId: string) => {
+    const { pubKeyHex, privKeyHex } = this.client.chatKeys.get(
+      SELF_INVITE_PUBLIC_KEY_NAME
+    );
+
+    const inviteKeyHex = ed25519.utils.bytesToHex(inviteKey);
+
+    return generateJWT(
+      inviteKeyHex,
+      [pubKeyHex, privKeyHex],
+      this.keyserverUrl,
+      accountId
+    );
+  };
+
+  private registerInvite = async (accountId: string, priv: boolean) => {
+    const storedKeyPair = this.client.chatKeys.get(SELF_INVITE_PUBLIC_KEY_NAME);
+
+    const pubKeyHex = storedKeyPair
+      ? storedKeyPair.pubKeyHex
+      : await this.generateAndStoreED25519KeyPair();
+
+    const idAuth = this.generateIdAuth(
+      ed25519.utils.hexToBytes(pubKeyHex),
+      accountId
+    );
+
+    if (priv) {
+      return null;
+    }
+
+    const fetchRs: { publicKey: string } = await fetch(
+      `${this.keyserverUrl}/invite/register`,
+      {
+        body: JSON.stringify({ idAuth }),
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    ).then((rs) => rs.json());
+
+    this.client.chatKeys.set(SELF_INVITE_PUBLIC_KEY_NAME, fetchRs.publicKey);
   };
 
   public register: IChatEngine["register"] = async ({ account }) => {
