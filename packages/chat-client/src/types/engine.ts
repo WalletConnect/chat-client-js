@@ -6,6 +6,7 @@ import {
   JsonRpcResult,
 } from "@walletconnect/jsonrpc-utils";
 import { CryptoTypes } from "@walletconnect/types";
+import { Cacao } from "@walletconnect/utils";
 import { ChatClientTypes, IChatClient } from "./client";
 import { JsonRpcTypes } from "./jsonrpc";
 
@@ -23,10 +24,15 @@ export abstract class IChatEngine {
 
   public abstract register(params: {
     account: string;
+    onSign: (message: string) => Promise<string>;
     private?: boolean;
   }): Promise<string>;
 
-  public abstract resolve(params: { account: string }): Promise<string>;
+  public abstract resolveIdentity(params: {
+    publicKey: string;
+  }): Promise<Cacao>;
+
+  public abstract resolveInvite(params: { account: string }): Promise<string>;
 
   public abstract invite(params: {
     account: string;

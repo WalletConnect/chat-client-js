@@ -2,6 +2,7 @@ import { ICore, IStore, CoreTypes } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "@walletconnect/logger";
 import { IChatEngine } from "./engine";
+import { Cacao } from "@walletconnect/utils";
 
 export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
@@ -96,7 +97,15 @@ export abstract class IChatClient {
     string,
     { messages: ChatClientTypes.Message[]; topic: string }
   >;
-  public abstract chatKeys: IStore<string, any>;
+  public abstract chatKeys: IStore<
+    string,
+    {
+      identityKeyPub: string;
+      identityKeyPriv: string;
+      inviteKeyPub: string;
+      inviteKeyPriv: string;
+    }
+  >;
   public abstract engine: IChatEngine;
 
   constructor(public opts?: ChatClientTypes.Options) {}
@@ -106,10 +115,15 @@ export abstract class IChatClient {
   // register a blockchain account with a public key / returns the public key
   public abstract register(params: {
     account: string;
+    onSign: (message: string) => Promise<string>;
     private?: boolean;
   }): Promise<string>;
 
-  public abstract resolve(params: { account: string }): Promise<string>;
+  public abstract resolveIdentity(params: {
+    publicKey: string;
+  }): Promise<Cacao>;
+
+  public abstract resolveInvite(params: { account: string }): Promise<string>;
 
   // sends a chat invite to peer account / returns an invite id
   public abstract invite(params: {

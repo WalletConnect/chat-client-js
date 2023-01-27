@@ -105,9 +105,18 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  public resolve: IChatClient["resolve"] = async (params) => {
+  public resolveIdentity: IChatClient["resolveIdentity"] = async (params) => {
     try {
-      return await this.engine.resolve(params);
+      return await this.engine.resolveIdentity(params);
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
+  public resolveInvite: IChatClient["resolveInvite"] = async (params) => {
+    try {
+      return await this.engine.resolveInvite(params);
     } catch (error: any) {
       this.logger.error(error.message);
       throw error;
