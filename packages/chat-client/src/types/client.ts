@@ -39,6 +39,7 @@ export declare namespace ChatClientTypes {
     topic: string | null;
     selfAccount: string;
     peerAccount: string;
+    status: "pending" | "rejected";
   }
 
   interface Contact {
@@ -78,6 +79,7 @@ export declare namespace ChatClientTypes {
 
 export abstract class IChatClient {
   public abstract readonly name: string;
+  public abstract currentAccount: string;
 
   public abstract core: ICore;
   public abstract events: EventEmitter;
@@ -96,6 +98,7 @@ export abstract class IChatClient {
   public abstract chatKeys: IStore<
     string,
     {
+      isCurrent: boolean;
       identityKeyPub: string;
       identityKeyPriv: string;
       inviteKeyPub: string;
@@ -151,15 +154,17 @@ export abstract class IChatClient {
   //   publicKey: string;
   // }): Promise<void>;
 
-  // returns all invites matching an account / returns maps of invites indexed by id
-  public abstract getInvites(params?: {
-    account: string;
-  }): Map<number, ChatClientTypes.Invite>;
+  // returns all invites for current account / returns maps of invites indexed by id
+  public abstract getInvites(): Map<number, ChatClientTypes.Invite>;
 
-  // returns all threads matching an account / returns map of threads indexed by topic
-  public abstract getThreads(params?: {
-    account: string;
-  }): Map<string, ChatClientTypes.Thread>;
+  // returns all threads for current account / returns map of threads indexed by topic
+  public abstract getThreads(): Map<string, ChatClientTypes.Thread>;
+
+  // returns all pendingThreads for current account / returns map of threads indexed by topic
+  public abstract getPendingThreads(): Map<
+    string,
+    ChatClientTypes.PendingThread
+  >;
 
   // returns all messages matching a thread's topic / returns array of messages
   public abstract getMessages(params: {

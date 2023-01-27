@@ -22,6 +22,7 @@ import { ChatClientTypes, IChatClient } from "./types";
 // FIXME: ChatClient not reading existing chatMessages from localStorage for some reason.
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
+  public currentAccount = "";
 
   public core: ICore;
   public events = new EventEmitter();
@@ -43,6 +44,8 @@ export class ChatClient extends IChatClient {
 
   constructor(opts?: Record<string, any>) {
     super(opts);
+
+    this.currentAccount = opts?.currentAccount;
 
     const logger =
       typeof opts?.logger !== "undefined" && typeof opts?.logger !== "string"
@@ -177,16 +180,10 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  public getInvites: IChatClient["getInvites"] = (params) => {
+  public getInvites: IChatClient["getInvites"] = () => {
     try {
       return this.chatInvites
-        .getAll(
-          params?.account
-            ? {
-                account: params.account,
-              }
-            : undefined
-        )
+        .getAll({ account: this.currentAccount })
         .reduce<Map<number, ChatClientTypes.Invite>>((inviteMap, invite) => {
           if (!invite.id)
             throw new Error(
@@ -201,20 +198,35 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  public getThreads: IChatClient["getThreads"] = (params) => {
+  public getThreads: IChatClient["getThreads"] = () => {
     try {
       return this.chatThreads
-        .getAll(
-          params?.account
-            ? {
-                selfAccount: params.account,
-              }
-            : undefined
-        )
+        .getAll({ selfAccount: this.currentAccount })
         .reduce<Map<string, ChatClientTypes.Thread>>((threadMap, thread) => {
           threadMap.set(thread.topic.toString(), thread);
           return threadMap;
         }, new Map());
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
+  public getPendingThreads: IChatClient["getPendingThreads"] = () => {
+    try {
+      return this.chatThreadsPending
+        .getAll({ selfAccount: this.currentAccount })
+        .reduce<Map<string, ChatClientTypes.PendingThread>>(
+          (pendingThreadMap, pendingThread) => {
+            if (pendingThread.topic)
+              pendingThreadMap.set(
+                pendingThread.topic?.toString(),
+                pendingThread
+              );
+            return pendingThreadMap;
+          },
+          new Map()
+        );
     } catch (error: any) {
       this.logger.error(error.message);
       throw error;
@@ -268,7 +280,7 @@ export class ChatClient extends IChatClient {
       await this.chatMessages.init();
       await this.chatKeys.init();
       await this.chatContacts.init();
-      await this.engine.init();
+      await this.engine.init(this.currentAccount);
       this.logger.info(`ChatClient Initialization Success`);
     } catch (error: any) {
       this.logger.info(`ChatClient Initialization Failure`);

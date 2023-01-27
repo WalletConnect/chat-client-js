@@ -29,7 +29,6 @@ import { isAddress } from "@ethersproject/address";
 
 export class ChatEngine extends IChatEngine {
   private initialized = false;
-  private currentAccount = "";
   private events = new EventEmitter();
   private keyserverUrl = KEYSERVER_URL;
 
@@ -37,10 +36,13 @@ export class ChatEngine extends IChatEngine {
     super(client);
   }
 
-  public init: IChatEngine["init"] = async () => {
+  public init: IChatEngine["init"] = async (account: string) => {
     if (!this.initialized) {
       // await this.cleanup();
-      if (this.client.chatKeys.keys.includes(this.currentAccount)) {
+      if (this.client.chatKeys.keys.includes(this.client.currentAccount)) {
+        // Make sure the initial account is set to current if it is already
+        // included.
+        this.client.chatKeys.update(account, { isCurrent: true });
         await this.subscribeToSelfInviteTopic();
       }
       this.registerRelayerEvents();
@@ -77,6 +79,7 @@ export class ChatEngine extends IChatEngine {
     } else {
       if (type === "identity") {
         this.client.chatKeys.set(accountId, {
+          isCurrent: true,
           identityKeyPriv: privKeyHex,
           identityKeyPub: pubKeyHex,
           inviteKeyPriv: "",
@@ -84,6 +87,7 @@ export class ChatEngine extends IChatEngine {
         });
       } else if (type === "invite") {
         this.client.chatKeys.set(accountId, {
+          isCurrent: true,
           inviteKeyPriv: privKeyHex,
           inviteKeyPub: pubKeyHex,
           identityKeyPriv: "",
@@ -202,7 +206,7 @@ export class ChatEngine extends IChatEngine {
     const inviteKey = await this.registerInvite(account, false);
     console.log({ inviteKey });
 
-    this.currentAccount = account;
+    this.client.currentAccount = account;
 
     return identityKey;
   };
@@ -292,12 +296,14 @@ export class ChatEngine extends IChatEngine {
       topic: responseTopic,
       selfAccount: invite.account,
       peerAccount: account,
+      status: "pending",
     });
 
     console.log("invite > chatThreadsPending.set: ", account, {
       topic: responseTopic,
       selfAccount: invite.account,
       peerAccount: account,
+      status: "pending",
     });
 
     return inviteId;
@@ -306,7 +312,7 @@ export class ChatEngine extends IChatEngine {
   public accept: IChatEngine["accept"] = async ({ id }) => {
     const invite = this.client.chatInvites.get(id);
 
-    if (!this.currentAccount) {
+    if (!this.client.currentAccount) {
       throw new Error("No account registered");
     }
 
@@ -314,7 +320,9 @@ export class ChatEngine extends IChatEngine {
     // NOTE: This is a very roundabout way to get back to symKey I by re-deriving,
     // since crypto.decode doesn't expose it.
     // Can we simplify this?
-    const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
+    const { inviteKeyPub } = this.client.chatKeys.get(
+      this.client.currentAccount
+    );
     console.log(
       "accept > this.client.chatKeys.get('invitePublicKey'): ",
       inviteKeyPub
@@ -354,13 +362,13 @@ export class ChatEngine extends IChatEngine {
 
     await this.client.chatThreads.set(chatThreadTopic, {
       topic: chatThreadTopic,
-      selfAccount: this.currentAccount,
+      selfAccount: this.client.currentAccount,
       peerAccount: invite.account,
     });
 
     console.log("accept > chatThreads.set:", chatThreadTopic, {
       topic: chatThreadTopic,
-      selfAccount: this.currentAccount,
+      selfAccount: this.client.currentAccount,
       peerAccount: invite.account,
     });
 
@@ -376,12 +384,14 @@ export class ChatEngine extends IChatEngine {
   };
 
   public reject: IChatEngine["reject"] = async ({ id }) => {
-    if (!this.currentAccount) {
+    if (!this.client.currentAccount) {
       throw new Error("No account registered");
     }
 
     const invite = this.client.chatInvites.get(id);
-    const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
+    const { inviteKeyPub } = this.client.chatKeys.get(
+      this.client.currentAccount
+    );
 
     const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
       inviteKeyPub,
@@ -499,11 +509,13 @@ export class ChatEngine extends IChatEngine {
   };
 
   protected subscribeToSelfInviteTopic = async () => {
-    if (!this.currentAccount) {
+    if (!this.client.currentAccount) {
       throw new Error("No account registered");
     }
 
-    const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
+    const { inviteKeyPub } = this.client.chatKeys.get(
+      this.client.currentAccount
+    );
     console.log(">>>>>>>>> selfInvitePublicKey:", inviteKeyPub);
 
     const selfInviteTopic = hashKey(inviteKeyPub);
@@ -538,11 +550,11 @@ export class ChatEngine extends IChatEngine {
       RELAYER_EVENTS.message,
       async (event: RelayerTypes.MessageEvent) => {
         const { topic, message } = event;
-        if (!this.client.chatKeys.keys.includes(this.currentAccount)) {
+        if (!this.client.chatKeys.keys.includes(this.client.currentAccount)) {
           return;
         }
         const selfInvitePublicKeyEntry = this.client.chatKeys.get(
-          this.currentAccount
+          this.client.currentAccount
         );
         console.log(">>>>>>> receiverPublicKey: ", selfInvitePublicKeyEntry);
         const payload = await this.client.core.crypto.decode(topic, message, {
@@ -630,7 +642,9 @@ export class ChatEngine extends IChatEngine {
     console.log("onInviteResponse:", topic, payload);
     // TODO (post-MVP): input validation
     if (isJsonRpcResult(payload)) {
-      const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
+      const { inviteKeyPub } = this.client.chatKeys.get(
+        this.client.currentAccount
+      );
       const topicSymKeyT = await this.client.core.crypto.generateSharedKey(
         inviteKeyPub,
         payload.result.publicKey

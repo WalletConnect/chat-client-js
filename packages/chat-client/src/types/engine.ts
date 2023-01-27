@@ -20,7 +20,7 @@ export declare namespace EngineTypes {
 export abstract class IChatEngine {
   constructor(public client: IChatClient) {}
 
-  public abstract init(): Promise<void>;
+  public abstract init(account: string): Promise<void>;
 
   public abstract register(params: {
     account: string;
