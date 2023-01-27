@@ -1,4 +1,5 @@
 import { expect, describe, it, beforeEach, afterEach, vi } from "vitest";
+import { Wallet } from "@ethersproject/wallet";
 import { generateRandomBytes32 } from "@walletconnect/utils";
 import ChatClient from "../../src";
 import { ChatClientTypes } from "../../src/types";
@@ -54,38 +55,71 @@ describe("ChatClient", () => {
   });
 
   it("can register an account on the keyserver", async () => {
-    const publicKey = await client.register({
-      account: TEST_CLIENT_ACCOUNT,
-    });
-    const peerPublicKey = await peer.register({
-      account: TEST_PEER_ACCOUNT,
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
+    const publicKeySelf = await client.register({
+      account: `eip155:1:${walletSelf.address}`,
+      onSign: (message) => walletSelf.signMessage(message),
     });
 
-    expect(publicKey.length).toBeGreaterThan(0);
-    expect(peerPublicKey.length).toBeGreaterThan(0);
+    const publicKeyPeer = await client.register({
+      account: `eip155:1:${walletPeer.address}`,
+      onSign: (message) => walletPeer.signMessage(message),
+    });
+
+    expect(publicKeySelf.length).toBeGreaterThan(0);
+    expect(publicKeyPeer.length).toBeGreaterThan(0);
   });
 
   it("can resolve an account on the keyserver", async () => {
-    const publicKey = await peer.resolve({
-      account: TEST_CLIENT_ACCOUNT,
-    });
-    const peerPublicKey = await client.resolve({
-      account: TEST_PEER_ACCOUNT,
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
+
+    const peerIdentityPublicKey = await peer.register({
+      account: `eip155:1:${walletPeer.address}`,
+      onSign: (message) => walletPeer.signMessage(message),
     });
 
-    expect(publicKey.length).toBeGreaterThan(0);
-    expect(peerPublicKey.length).toBeGreaterThan(0);
+    const selfIdentityPublicKey = await client.register({
+      account: `eip155:1:${walletSelf.address}`,
+      onSign: (message) => walletSelf.signMessage(message),
+    });
+
+    const selfIdentityCacao = await peer.resolveIdentity({
+      publicKey: `${selfIdentityPublicKey}`,
+    });
+    const peerIdentityCacao = await client.resolveIdentity({
+      publicKey: `${peerIdentityPublicKey}`,
+    });
+
+    expect(selfIdentityCacao.p.iss).toEqual(
+      `did:pkh:eip155:1:${walletSelf.address}`
+    );
+    expect(peerIdentityCacao.p.iss).toEqual(
+      `did:pkh:eip155:1:${walletPeer.address}`
+    );
   });
 
   it("can send & receive invites", async () => {
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
     let peerReceivedInvite = false;
     let peerJoinedChat = false;
 
-    const peerInvitePublicKey = await peer.register({
-      account: TEST_PEER_ACCOUNT,
+    console.log("Attempting to regjuster CLIENT");
+
+    const peerIdentityPublicKey = await peer.register({
+      account: `eip155:1:${walletPeer.address}`,
+      onSign: (message) => walletPeer.signMessage(message),
     });
 
-    client.resolve = vi.fn(() => Promise.resolve(peerInvitePublicKey));
+    console.log("Registered peer", peerIdentityPublicKey);
+
+    const selfIdentityPublicKey = await client.register({
+      account: `eip155:1:${walletSelf.address}`,
+      onSign: (message) => walletSelf.signMessage(message),
+    });
+    console.log("Registered client", selfIdentityPublicKey);
 
     peer.on("chat_invite", async (args) => {
       const { id } = args;
@@ -104,13 +138,15 @@ describe("ChatClient", () => {
 
     const invite: ChatClientTypes.PartialInvite = {
       message: "hey let's chat",
-      account: TEST_CLIENT_ACCOUNT,
+      account: `eip155:1${walletSelf.address}`,
     };
 
     const inviteId = await client.invite({
-      account: TEST_PEER_ACCOUNT,
+      account: `eip155:1:${walletPeer.address}`,
       invite,
     });
+
+    console.log({ invite, inviteId, peerReceivedInvite, peerJoinedChat });
 
     await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
 
@@ -175,17 +211,17 @@ describe("ChatClient", () => {
 
   describe("ping", () => {
     it("can ping a known chat peer", async () => {
+      const walletPeer = Wallet.createRandom();
       // TODO: abstract this step, it duplicates the invite test above.
       // Set up an acknowledged chat thread
       let chatThreadTopic = "";
       let peerReceivedInvite = false;
       let peerJoinedChat = false;
 
-      const peerInvitePublicKey = await peer.register({
+      await peer.register({
         account: TEST_PEER_ACCOUNT,
+        onSign: (message) => walletPeer.signMessage(message),
       });
-
-      client.resolve = vi.fn(() => Promise.resolve(peerInvitePublicKey));
 
       peer.on("chat_invite", async (args) => {
         const { id } = args;

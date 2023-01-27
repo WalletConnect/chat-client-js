@@ -1,6 +1,6 @@
 import { base58btc } from "multiformats/bases/base58";
 import bs58 from "bs58";
-import ed25519 from "@noble/ed25519";
+import * as ed25519 from "@noble/ed25519";
 
 interface JwtHeader {
   typ: string;
@@ -10,7 +10,7 @@ interface JwtHeader {
 export const DAY_IN_MS = 86400 * 1000;
 
 export const DID_METHOD_KEY = "key";
-export const DID_DELIMITER = ".";
+export const DID_DELIMITER = ":";
 export const DID_PREFIX = "did";
 export const DID_METHOD_PKH = "pkh";
 
@@ -36,11 +36,17 @@ const concatUInt8Arrays = (array1: Uint8Array, array2: Uint8Array) => {
 };
 
 export const encodeDidPkh = (accountId: string) => {
-  return `${DID_PREFIX}${DID_PREFIX}${DID_METHOD_PKH}${DID_PREFIX}${accountId}`;
+  return `${DID_PREFIX}${DID_DELIMITER}${DID_METHOD_PKH}${DID_DELIMITER}${accountId}`;
 };
 
 export const jwtExp = (issuedAt: number) => {
   return issuedAt + DAY_IN_MS;
+};
+
+const objectToHex = (obj: unknown) => {
+  return Buffer.from(new TextEncoder().encode(JSON.stringify(obj))).toString(
+    "base64url"
+  );
 };
 
 export const encodeJwt = (
@@ -48,21 +54,25 @@ export const encodeJwt = (
   payload: InviteKeyClaims,
   signature: Uint8Array
 ) => {
-  const encodedSignature = new TextDecoder().decode(signature);
-  return `${JSON.stringify(header)}${JWT_DELIMITER}${JSON.stringify(
+  const encodedSignature = Buffer.from(signature).toString("base64url");
+
+  return `${objectToHex(header)}${JWT_DELIMITER}${objectToHex(
     payload
   )}${JWT_DELIMITER}${encodedSignature}`;
 };
 
 export const encodeData = (header: JwtHeader, payload: InviteKeyClaims) => {
-  return `${JSON.stringify(header)}${JWT_DELIMITER}${JSON.stringify(payload)}`;
+  const headerByteArray = objectToHex(header);
+  const payloadByteArray = objectToHex(payload);
+  return `${headerByteArray}${JWT_DELIMITER}${payloadByteArray}`;
 };
 
-export const encodeIss = (publicKey: Uint8Array) => {
+export const encodeIss = (keyHex: string) => {
   const header = bs58.decode(MULTICODEC_ED25519_HEADER);
+  const publicKey = ed25519.utils.hexToBytes(keyHex);
   const multicodec = base58btc.encode(concatUInt8Arrays(header, publicKey));
 
-  return `${DID_PREFIX}${DID_PREFIX}${DID_METHOD_KEY}${DID_PREFIX}${multicodec}`;
+  return `${DID_PREFIX}${DID_DELIMITER}${DID_METHOD_KEY}${DID_DELIMITER}${multicodec}`;
 };
 
 export const generateJWT = async (
@@ -72,8 +82,8 @@ export const generateJWT = async (
   account: string
 ) => {
   const [publicKey, privateKey] = identityKeyPair;
-  const issuer = encodeIss(ed25519.utils.hexToBytes(publicKey));
-  const issuedAt = Date.now() / 1000;
+  const issuer = encodeIss(publicKey);
+  const issuedAt = Math.round(Date.now() / 1000);
   const expiration = jwtExp(issuedAt);
   const didPublicKey = encodeDidPkh(account);
   const payload: InviteKeyClaims = {
@@ -84,11 +94,12 @@ export const generateJWT = async (
     exp: expiration,
     pkh: didPublicKey,
   };
+
   const header: JwtHeader = {
     alg: "EdDSA",
-    typ: "jwt",
+    typ: "JWT",
   };
-  const data = encodeData(header, payload);
+  const data = new TextEncoder().encode(encodeData(header, payload));
 
   const signature = await ed25519.sign(data, privateKey);
 
