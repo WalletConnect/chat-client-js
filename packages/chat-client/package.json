@@ -30,11 +30,12 @@
   },
   "dependencies": {
     "@ethersproject/address": "^5.7.0",
+    "@noble/ed25519": "^1.7.1",
     "@walletconnect/core": "^2.1.4",
     "@walletconnect/jsonrpc-utils": "^1.0.3",
     "@walletconnect/logger": "^2.0.1",
     "@walletconnect/time": "^1.0.2",
-    "@walletconnect/utils": "^2.1.4",
+    "@walletconnect/utils": "^2.3.2",
     "axios": "^0.27.2",
     "bs58": "^5.0.0",
     "events": "^3.3.0",
