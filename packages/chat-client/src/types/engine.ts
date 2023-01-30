@@ -94,12 +94,12 @@ export abstract class IChatEngine {
 
   protected abstract onIncomingInvite(
     topic: string,
-    payload: JsonRpcRequest<ChatClientTypes.Invite>
+    payload: JsonRpcRequest<{ idAuth: string }>
   ): Promise<void>;
 
   protected abstract onInviteResponse(
     topic: string,
-    payload: JsonRpcResult<{ publicKey: string }> | JsonRpcError
+    payload: JsonRpcResult<{ idAuth: string }> | JsonRpcError
   ): void;
 
   protected abstract onIncomingMessage(

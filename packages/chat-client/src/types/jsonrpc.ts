@@ -20,7 +20,7 @@ export declare namespace JsonRpcTypes {
   // -- requests --------------------------------------------------- //
 
   interface RequestParams {
-    wc_chatInvite: ChatClientTypes.Invite;
+    wc_chatInvite: { idAuth: string };
     wc_chatMessage: ChatClientTypes.Message;
     wc_chatPing: Record<string, unknown>;
     wc_chatLeave: Record<string, unknown>;
@@ -28,7 +28,7 @@ export declare namespace JsonRpcTypes {
 
   // -- responses -------------------------------------------------- //
   interface Results {
-    wc_chatInvite: { publicKey: string };
+    wc_chatInvite: { idAuth: string };
     wc_chatMessage: true;
     wc_chatPing: true;
     wc_chatLeave: true;

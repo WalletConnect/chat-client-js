@@ -11,8 +11,9 @@ interface JwtHeader {
 export interface InviteKeyClaims {
   iss: string;
   sub: string;
-  aud: string;
-  pkh: string;
+  aud?: string;
+  ksu?: string;
+  pkh?: string;
   iat: number;
   exp: number;
 }
@@ -83,21 +84,10 @@ export const generateJWT = async (
   invitePublicKey: string,
   identityKeyPair: [string, string],
   keyserverUrl: string,
-  account: string
+  account: string,
+  payload: InviteKeyClaims
 ) => {
   const [publicKey, privateKey] = identityKeyPair;
-  const issuer = encodeIss(publicKey);
-  const issuedAt = Math.round(Date.now() / 1000);
-  const expiration = jwtExp(issuedAt);
-  const didPublicKey = composeDidPkh(account);
-  const payload: InviteKeyClaims = {
-    iss: issuer,
-    sub: invitePublicKey,
-    aud: keyserverUrl,
-    iat: issuedAt,
-    exp: expiration,
-    pkh: didPublicKey,
-  };
 
   const header: JwtHeader = {
     alg: "EdDSA",
