@@ -1,10 +1,20 @@
 import { base58btc } from "multiformats/bases/base58";
 import bs58 from "bs58";
 import * as ed25519 from "@noble/ed25519";
+import { isValidObject } from "@walletconnect/utils";
 
 interface JwtHeader {
   typ: string;
   alg: string;
+}
+
+export interface InviteKeyClaims {
+  iss: string;
+  sub: string;
+  aud: string;
+  pkh: string;
+  iat: number;
+  exp: number;
 }
 
 export const DAY_IN_MS = 86400 * 1000;
@@ -18,15 +28,6 @@ export const JWT_DELIMITER = ".";
 
 export const MULTICODEC_ED25519_HEADER = "K36";
 
-export interface InviteKeyClaims {
-  iss: string;
-  sub: string;
-  aud: string;
-  pkh: string;
-  iat: number;
-  exp: number;
-}
-
 const concatUInt8Arrays = (array1: Uint8Array, array2: Uint8Array) => {
   const mergedArray = new Uint8Array(array1.length + array2.length);
   mergedArray.set(array1);
@@ -35,7 +36,7 @@ const concatUInt8Arrays = (array1: Uint8Array, array2: Uint8Array) => {
   return mergedArray;
 };
 
-export const encodeDidPkh = (accountId: string) => {
+export const composeDidPkh = (accountId: string) => {
   return `${DID_PREFIX}${DID_DELIMITER}${DID_METHOD_PKH}${DID_DELIMITER}${accountId}`;
 };
 
@@ -44,6 +45,9 @@ export const jwtExp = (issuedAt: number) => {
 };
 
 const objectToHex = (obj: unknown) => {
+  if (!isValidObject(obj)) {
+    throw new Error(`Supplied object is not valid ${JSON.stringify(obj)}`);
+  }
   return Buffer.from(new TextEncoder().encode(JSON.stringify(obj))).toString(
     "base64url"
   );
@@ -85,7 +89,7 @@ export const generateJWT = async (
   const issuer = encodeIss(publicKey);
   const issuedAt = Math.round(Date.now() / 1000);
   const expiration = jwtExp(issuedAt);
-  const didPublicKey = encodeDidPkh(account);
+  const didPublicKey = composeDidPkh(account);
   const payload: InviteKeyClaims = {
     iss: issuer,
     sub: invitePublicKey,

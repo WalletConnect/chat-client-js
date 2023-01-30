@@ -24,7 +24,7 @@ import { ENGINE_RPC_OPTS, KEYSERVER_URL } from "../constants";
 import * as ed25519 from "@noble/ed25519";
 import { IChatClient, IChatEngine, JsonRpcTypes } from "../types";
 import { engineEvent } from "../utils/engineUtil";
-import { encodeDidPkh, encodeIss, generateJWT } from "../utils/jwtAuth";
+import { composeDidPkh, encodeIss, generateJWT } from "../utils/jwtAuth";
 import { isAddress } from "@ethersproject/address";
 
 export class ChatEngine extends IChatEngine {
@@ -132,7 +132,7 @@ export class ChatEngine extends IChatEngine {
           aud: this.keyserverUrl,
           statement: "Test",
           domain: this.keyserverUrl,
-          iss: encodeDidPkh(accountId),
+          iss: composeDidPkh(accountId),
           nonce: generateRandomBytes32(),
           iat: new Date().toISOString(),
           version: "1",
@@ -144,7 +144,7 @@ export class ChatEngine extends IChatEngine {
         },
       };
 
-      const cacaoMessage = formatMessage(cacao.p, encodeDidPkh(accountId));
+      const cacaoMessage = formatMessage(cacao.p, composeDidPkh(accountId));
 
       const signature = await onSign(cacaoMessage);
 
