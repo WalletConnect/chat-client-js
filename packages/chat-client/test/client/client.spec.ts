@@ -142,7 +142,7 @@ describe("ChatClient", () => {
 
     const invite: ChatClientTypes.PartialInvite = {
       message: "hey let's chat",
-      account: `eip155:1${walletSelf.address}`,
+      account: `eip155:1:${walletSelf.address}`,
     };
 
     const inviteId = await client.invite({
