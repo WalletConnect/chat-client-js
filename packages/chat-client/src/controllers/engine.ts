@@ -22,7 +22,12 @@ import axios from "axios";
 import EventEmitter from "events";
 import { ENGINE_RPC_OPTS, KEYSERVER_URL } from "../constants";
 import * as ed25519 from "@noble/ed25519";
-import { IChatClient, IChatEngine, JsonRpcTypes } from "../types";
+import {
+  ChatClientTypes,
+  IChatClient,
+  IChatEngine,
+  JsonRpcTypes,
+} from "../types";
 import { engineEvent } from "../utils/engineUtil";
 import {
   composeDidPkh,
@@ -669,18 +674,24 @@ export class ChatEngine extends IChatEngine {
       const { id, params } = payload;
       console.log("payload:", payload);
 
-      await this.client.chatInvites.set(id, { ...params, id });
-
       const decodedPayload = jwt.decode(params.idAuth, {
         json: true,
-      });
+      }) as Record<string, string>;
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
+
+      const invitePayload: ChatClientTypes.Invite = {
+        account: decodedPayload.aud,
+        message: decodedPayload.sub,
+        publicKey: decodedPayload.iss,
+      };
+
+      await this.client.chatInvites.set(id, { ...invitePayload, id });
 
       this.client.emit("chat_invite", {
         id,
         topic: inviteTopic,
-        params: {},
+        params: invitePayload,
       });
     } catch (err: any) {
       await this.sendError(payload.id, inviteTopic, err);
@@ -696,9 +707,16 @@ export class ChatEngine extends IChatEngine {
     // TODO (post-MVP): input validation
     if (isJsonRpcResult(payload)) {
       const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
+
+      const decodedPayload = jwt.decode(payload.result.idAuth, {
+        json: true,
+      }) as Record<string, string>;
+
+      if (!decodedPayload) throw new Error("Empty ID Auth payload");
+
       const topicSymKeyT = await this.client.core.crypto.generateSharedKey(
         inviteKeyPub,
-        payload.result.publicKey
+        decodedPayload.iss
       );
       const symKeyT = this.client.core.crypto.keychain.get(topicSymKeyT);
 
