@@ -14,6 +14,7 @@ export interface InviteKeyClaims {
   aud?: string;
   ksu?: string;
   pkh?: string;
+  pke?: string;
   iat: number;
   exp: number;
 }
@@ -28,6 +29,7 @@ export const DID_METHOD_PKH = "pkh";
 export const JWT_DELIMITER = ".";
 
 export const MULTICODEC_ED25519_HEADER = "K36";
+export const MULTICODEC_X25519_HEADER = "Jxg";
 
 const concatUInt8Arrays = (array1: Uint8Array, array2: Uint8Array) => {
   const mergedArray = new Uint8Array(array1.length + array2.length);
@@ -72,12 +74,41 @@ export const encodeData = (header: JwtHeader, payload: InviteKeyClaims) => {
   return `${headerByteArray}${JWT_DELIMITER}${payloadByteArray}`;
 };
 
-export const encodeIss = (keyHex: string) => {
+export const encodeEd25519Key = (keyHex: string) => {
   const header = bs58.decode(MULTICODEC_ED25519_HEADER);
+
   const publicKey = ed25519.utils.hexToBytes(keyHex);
+
   const multicodec = base58btc.encode(concatUInt8Arrays(header, publicKey));
 
   return `${DID_PREFIX}${DID_DELIMITER}${DID_METHOD_KEY}${DID_DELIMITER}${multicodec}`;
+};
+
+export const decodeEd25519Key = (encoded: string) => {
+  const encodedSegment = encoded.split(DID_DELIMITER).pop() ?? "";
+  const keyHex = ed25519.utils.bytesToHex(base58btc.decode(encodedSegment));
+
+  if (!keyHex.startsWith("ed01")) throw Error("Invalid Ed25519 key");
+  const publicKey = ed25519.utils.hexToBytes(keyHex.substring(4));
+  return publicKey;
+};
+
+export const encodeX25519Key = (keyHex: string) => {
+  const header = bs58.decode(MULTICODEC_X25519_HEADER);
+
+  const publicKey = ed25519.utils.hexToBytes(keyHex);
+
+  const multicodec = base58btc.encode(concatUInt8Arrays(header, publicKey));
+
+  return `${DID_PREFIX}${DID_DELIMITER}${DID_METHOD_KEY}${DID_DELIMITER}${multicodec}`;
+};
+
+export const decodeX25519Key = (encoded: string) => {
+  const encodedSegment = encoded.split(DID_DELIMITER).pop() ?? "";
+  const keyHex = ed25519.utils.bytesToHex(base58btc.decode(encodedSegment));
+  if (!keyHex.startsWith("ec01")) throw Error("Invalid X25519 key");
+  const publicKey = ed25519.utils.hexToBytes(keyHex.substring(4));
+  return publicKey;
 };
 
 export const generateJWT = async (

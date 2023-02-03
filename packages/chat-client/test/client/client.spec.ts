@@ -61,18 +61,27 @@ describe("ChatClient", () => {
   it("can register an account on the keyserver", async () => {
     const walletSelf = Wallet.createRandom();
     const walletPeer = Wallet.createRandom();
-    const publicKeySelf = await client.register({
+    await client.register({
       account: `eip155:1:${walletSelf.address}`,
       onSign: (message) => walletSelf.signMessage(message),
     });
 
-    const publicKeyPeer = await client.register({
+    await peer.register({
       account: `eip155:1:${walletPeer.address}`,
       onSign: (message) => walletPeer.signMessage(message),
     });
 
-    expect(publicKeySelf.length).toBeGreaterThan(0);
-    expect(publicKeyPeer.length).toBeGreaterThan(0);
+    const selfKeys = client.chatKeys.get(`eip155:1:${walletSelf.address}`);
+    const peerKeys = peer.chatKeys.get(`eip155:1:${walletPeer.address}`);
+
+    expect(selfKeys.identityKeyPub.length).toBeGreaterThan(0);
+    expect(selfKeys.identityKeyPriv.length).toBeGreaterThan(0);
+    expect(selfKeys.inviteKeyPub.length).toBeGreaterThan(0);
+    expect(selfKeys.inviteKeyPriv.length).toBeGreaterThan(0);
+    expect(peerKeys.identityKeyPub.length).toBeGreaterThan(0);
+    expect(peerKeys.identityKeyPriv.length).toBeGreaterThan(0);
+    expect(peerKeys.inviteKeyPub.length).toBeGreaterThan(0);
+    expect(peerKeys.inviteKeyPriv.length).toBeGreaterThan(0);
   });
 
   it("can resolve an account on the keyserver", async () => {
@@ -127,6 +136,7 @@ describe("ChatClient", () => {
 
     peer.on("chat_invite", async (args) => {
       const { id } = args;
+      console.log("RECIEVED INVITE");
       console.log("chat_invite:", args);
       const chatThreadTopic = await peer.accept({ id });
       expect(chatThreadTopic).toBeDefined();
@@ -149,8 +159,6 @@ describe("ChatClient", () => {
       account: `eip155:1:${walletPeer.address}`,
       invite,
     });
-
-    console.log({ invite, inviteId, peerReceivedInvite, peerJoinedChat });
 
     await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
 

@@ -17,6 +17,10 @@ import {
   getSdkError,
   hashKey,
   TYPE_1,
+  deserialize,
+  deriveSymKey,
+  validateDecoding,
+  decrypt,
 } from "@walletconnect/utils";
 import axios from "axios";
 import EventEmitter from "events";
@@ -31,8 +35,9 @@ import {
 import { engineEvent } from "../utils/engineUtil";
 import {
   composeDidPkh,
-  encodeIss,
-  encodeJwt,
+  decodeEd25519Key,
+  encodeEd25519Key,
+  encodeX25519Key,
   generateJWT,
   InviteKeyClaims,
   jwtExp,
@@ -65,6 +70,7 @@ export class ChatEngine extends IChatEngine {
     }
   };
 
+  // type invite has to be called after type identity
   private generateAndStoreED25519KeyPair = async (
     accountId: string,
     type: "invite" | "identity"
@@ -75,34 +81,20 @@ export class ChatEngine extends IChatEngine {
     const pubKeyHex = ed25519.utils.bytesToHex(publicKey).toLowerCase();
     const privKeyHex = ed25519.utils.bytesToHex(privateKey).toLowerCase();
 
-    if (this.client.chatKeys.keys.includes(accountId)) {
-      if (type === "invite") {
-        this.client.chatKeys.update(accountId, {
-          identityKeyPriv: privKeyHex,
-          identityKeyPub: pubKeyHex,
-        });
-      } else if (type === "identity") {
-        this.client.chatKeys.update(accountId, {
-          inviteKeyPriv: privKeyHex,
-          inviteKeyPub: pubKeyHex,
-        });
-      }
-    } else {
-      if (type === "identity") {
-        this.client.chatKeys.set(accountId, {
-          identityKeyPriv: privKeyHex,
-          identityKeyPub: pubKeyHex,
-          inviteKeyPriv: "",
-          inviteKeyPub: "",
-        });
-      } else if (type === "invite") {
-        this.client.chatKeys.set(accountId, {
-          inviteKeyPriv: privKeyHex,
-          inviteKeyPub: pubKeyHex,
-          identityKeyPriv: "",
-          identityKeyPub: "",
-        });
-      }
+    this.client.core.crypto.keychain.set(pubKeyHex, privKeyHex);
+
+    if (type === "invite") {
+      this.client.chatKeys.update(accountId, {
+        inviteKeyPriv: privKeyHex,
+        inviteKeyPub: pubKeyHex,
+      });
+    } else if (type === "identity") {
+      this.client.chatKeys.set(accountId, {
+        identityKeyPriv: privKeyHex,
+        identityKeyPub: pubKeyHex,
+        inviteKeyPriv: "",
+        inviteKeyPub: "",
+      });
     }
 
     return pubKeyHex;
@@ -140,7 +132,7 @@ export class ChatEngine extends IChatEngine {
         accountId,
         "identity"
       );
-      const didKey = encodeIss(pubKeyHex);
+      const didKey = encodeEd25519Key(pubKeyHex);
 
       const cacao: Cacao = {
         h: {
@@ -197,13 +189,15 @@ export class ChatEngine extends IChatEngine {
         "invite"
       );
 
-      const issuer = encodeIss(pubKeyHex);
+      const { identityKeyPub } = this.client.chatKeys.get(accountId);
+
+      const issuer = encodeEd25519Key(pubKeyHex);
       const issuedAt = Math.round(Date.now() / 1000);
       const expiration = jwtExp(issuedAt);
       const didPublicKey = composeDidPkh(accountId);
       const payload: InviteKeyClaims = {
-        iss: issuer,
-        sub: pubKeyHex,
+        iss: encodeEd25519Key(identityKeyPub),
+        sub: encodeEd25519Key(pubKeyHex),
         aud: this.keyserverUrl,
         iat: issuedAt,
         exp: expiration,
@@ -219,9 +213,7 @@ export class ChatEngine extends IChatEngine {
       if (!priv) {
         const url = `${this.keyserverUrl}/invite`;
         await axios
-          .post(url, {
-            idAuth,
-          })
+          .post(url, { idAuth })
           .catch((e) => console.error(e.toJSON()));
       }
 
@@ -232,9 +224,10 @@ export class ChatEngine extends IChatEngine {
   public register: IChatEngine["register"] = async ({ account, onSign }) => {
     const identityKey = await this.registerIdentity(account, onSign);
     const inviteKey = await this.registerInvite(account, false);
-    console.log({ inviteKey });
 
     this.currentAccount = account;
+
+    await this.subscribeToSelfInviteTopic();
 
     return identityKey;
   };
@@ -242,7 +235,7 @@ export class ChatEngine extends IChatEngine {
   public resolveIdentity: IChatEngine["resolveIdentity"] = async ({
     publicKey,
   }) => {
-    const encodedPubKey = encodeIss(publicKey).split(":")[2];
+    const encodedPubKey = encodeEd25519Key(publicKey).split(":")[2];
     const url = `${KEYSERVER_URL}/identity?publicKey=${encodedPubKey}`;
 
     try {
@@ -261,7 +254,6 @@ export class ChatEngine extends IChatEngine {
 
     try {
       const { data } = await axios.get<{ value: { inviteKey: string } }>(url);
-      console.log({ RESOLVED_INVITE_KEY: data });
       return data.value.inviteKey;
     } catch {
       throw new Error("No invite key found");
@@ -275,35 +267,41 @@ export class ChatEngine extends IChatEngine {
     });
 
     // generate a keyPair Y to encrypt the invite with derived DH symKey I.
-    const proposerInvitePublicKey =
-      await this.client.core.crypto.generateKeyPair();
+    const pubkeyY = await this.client.core.crypto.generateKeyPair();
 
     console.log(
       "invite > responderInvitePublicKey: ",
       responderInvitePublicKey
     );
 
-    const keys = this.client.chatKeys.get(account);
+    const keys = this.client.chatKeys.get(invite.account);
+
+    const pubkeyX = ed25519.utils.bytesToHex(
+      decodeEd25519Key(responderInvitePublicKey)
+    );
+
+    console.log({ responderInvitePublicKey });
 
     // invite topic is derived as the hash of the publicKey X.
-    const inviteTopic = hashKey(responderInvitePublicKey);
+    const inviteTopic = hashKey(pubkeyX);
 
     console.log("invite > inviteTopic: ", inviteTopic);
 
     const iat = Date.now();
-    const payload: InviteKeyClaims = {
+    const inviteProposalPayload: InviteKeyClaims = {
       iat,
       exp: jwtExp(iat),
-      iss: keys.identityKeyPub,
+      iss: encodeEd25519Key(keys.identityKeyPub),
+      pke: encodeX25519Key(keys.inviteKeyPub),
       ksu: this.keyserverUrl,
       sub: invite.message,
       aud: invite.account,
     };
 
     const idAuth = await this.generateIdAuth(
-      ed25519.utils.hexToBytes(proposerInvitePublicKey),
-      account,
-      payload
+      ed25519.utils.hexToBytes(pubkeyX),
+      invite.account,
+      inviteProposalPayload
     );
 
     // send invite encrypted with type 1 envelope to the invite topic including publicKey Y.
@@ -313,10 +311,19 @@ export class ChatEngine extends IChatEngine {
       { idAuth },
       {
         type: TYPE_1,
-        senderPublicKey: proposerInvitePublicKey,
-        receiverPublicKey: responderInvitePublicKey,
+        senderPublicKey: pubkeyY,
+        receiverPublicKey: pubkeyX,
       }
     );
+
+    console.log({
+      senderPublicKey: pubkeyY,
+      receiverPublicKey: pubkeyX,
+      genSymkey: await this.client.core.crypto.generateSharedKey(
+        pubkeyY,
+        pubkeyX
+      ),
+    });
 
     // TODO: needed? persist invite
     // await this.client.chatInvites.set(inviteId, completeInvite);
@@ -324,8 +331,8 @@ export class ChatEngine extends IChatEngine {
     // subscribe to response topic: topic R (response) = hash(symKey I)
     // TODO: abstract this responseTopic derivation here and in onIncoming into reusable helper
     const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
-      proposerInvitePublicKey,
-      responderInvitePublicKey
+      pubkeyY,
+      pubkeyX
     );
     const symKeyI = this.client.core.crypto.keychain.get(topicSymKeyI);
     const responseTopic = hashKey(symKeyI);
@@ -389,11 +396,11 @@ export class ChatEngine extends IChatEngine {
     const chatThreadTopic = hashKey(symKeyT);
 
     const iat = Date.now();
-    const payload: InviteKeyClaims = {
+    const inviteApprovalPayload: InviteKeyClaims = {
       iat,
       exp: jwtExp(iat),
-      iss: keys.identityKeyPub,
-      sub: invite.publicKey,
+      iss: encodeEd25519Key(keys.identityKeyPub),
+      sub: encodeX25519Key(publicKeyZ),
       aud: invite.account,
       ksu: this.keyserverUrl,
     };
@@ -401,7 +408,7 @@ export class ChatEngine extends IChatEngine {
     const idAuth = await this.generateIdAuth(
       ed25519.utils.hexToBytes(keys.inviteKeyPub),
       this.currentAccount,
-      payload
+      inviteApprovalPayload
     );
 
     // B sends response with publicKey Z on response topic encrypted with type 0 envelope.
@@ -566,6 +573,7 @@ export class ChatEngine extends IChatEngine {
     }
 
     const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
+
     console.log(">>>>>>>>> selfInvitePublicKey:", inviteKeyPub);
 
     const selfInviteTopic = hashKey(inviteKeyPub);
@@ -603,12 +611,24 @@ export class ChatEngine extends IChatEngine {
         if (!this.client.chatKeys.keys.includes(this.currentAccount)) {
           return;
         }
-        const selfInvitePublicKeyEntry = this.client.chatKeys.get(
-          this.currentAccount
+        const selfKeys = this.client.chatKeys.get(this.currentAccount);
+        const validated = validateDecoding(message, {
+          receiverPublicKey: selfKeys.identityKeyPub,
+        });
+
+        const symKeyDerived = await this.client.core.crypto.generateSharedKey(
+          selfKeys.inviteKeyPub,
+          validated.senderPublicKey || ""
         );
-        console.log(">>>>>>> receiverPublicKey: ", selfInvitePublicKeyEntry);
+
+        console.log({
+          sender: validated.senderPublicKey,
+          receiver: selfKeys.inviteKeyPub,
+          symKeyDerived,
+        });
+
         const payload = await this.client.core.crypto.decode(topic, message, {
-          receiverPublicKey: selfInvitePublicKeyEntry.inviteKeyPub,
+          receiverPublicKey: selfKeys.inviteKeyPub,
         });
         if (isJsonRpcRequest(payload)) {
           this.client.core.history.set(topic, payload);
