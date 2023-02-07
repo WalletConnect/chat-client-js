@@ -19,15 +19,15 @@ export declare namespace JsonRpcTypes {
   // -- requests --------------------------------------------------- //
 
   interface RequestParams {
-    wc_chatInvite: { idAuth: string };
-    wc_chatMessage: { idAuth: string };
+    wc_chatInvite: { inviteAuth: string };
+    wc_chatMessage: { messageAuth: string };
     wc_chatPing: Record<string, unknown>;
     wc_chatLeave: Record<string, unknown>;
   }
 
   // -- responses -------------------------------------------------- //
   interface Results {
-    wc_chatInvite: { idAuth: string };
+    wc_chatInvite: { responseAuth: string };
     wc_chatMessage: true;
     wc_chatPing: true;
     wc_chatLeave: true;

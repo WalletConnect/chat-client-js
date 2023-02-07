@@ -336,8 +336,8 @@ describe("ChatClient", () => {
       const id = 1666697147892830;
       const mockInvite: ChatClientTypes.ReceivedInvite = {
         message: "hey let's chat",
-        inviterAccount: account,
-        inviteeAccount: peerAccount,
+        inviterAccount: peerAccount,
+        inviteeAccount: account,
         id: mockInviteId,
         inviterPublicKey:
           "511dc223dcf4b4a0148009785fe5c247d4e9ece7e8bd83db3082d6f1cdc07e26",
@@ -346,13 +346,9 @@ describe("ChatClient", () => {
       };
       await client.chatReceivedInvites.set(mockInviteId, mockInvite);
 
-      expect(client.getReceivedInvites({ account }).size).toBe(1);
-      expect(client.getReceivedInvites({ account }).get(mockInviteId)).toEqual(
-        mockInvite
-      );
-      expect(client.getReceivedInvites({ account })).toEqual(
-        new Map([[id, mockInvite]])
-      );
+      expect(client.getReceivedInvites({ account }).length).toBe(1);
+      expect(client.chatReceivedInvites.get(mockInviteId)).toEqual(mockInvite);
+      expect(client.getReceivedInvites({ account })).toEqual([mockInvite]);
     });
   });
 

@@ -92,17 +92,17 @@ export abstract class IChatEngine {
 
   protected abstract onIncomingInvite(
     topic: string,
-    payload: JsonRpcRequest<{ idAuth: string }>
+    payload: JsonRpcRequest<{ inviteAuth: string }>
   ): Promise<void>;
 
   protected abstract onInviteResponse(
     topic: string,
-    payload: JsonRpcResult<{ idAuth: string }> | JsonRpcError
+    payload: JsonRpcResult<{ responseAuth: string }> | JsonRpcError
   ): void;
 
   protected abstract onIncomingMessage(
     topic: string,
-    payload: JsonRpcRequest<{ idAuth: string }>
+    payload: JsonRpcRequest<{ messageAuth: string }>
   ): Promise<void>;
 
   protected abstract onRejectedChatInvite(params: {

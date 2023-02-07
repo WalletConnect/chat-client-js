@@ -51,9 +51,13 @@ const objectToHex = (obj: unknown) => {
   if (!isValidObject(obj)) {
     throw new Error(`Supplied object is not valid ${JSON.stringify(obj)}`);
   }
-  return Buffer.from(new TextEncoder().encode(JSON.stringify(obj))).toString(
-    "base64url"
-  );
+
+  // toString("base64url") isn't universally supported.
+  return Buffer.from(new TextEncoder().encode(JSON.stringify(obj)))
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
 };
 
 export const encodeJwt = (
@@ -61,7 +65,11 @@ export const encodeJwt = (
   payload: InviteKeyClaims,
   signature: Uint8Array
 ) => {
-  const encodedSignature = Buffer.from(signature).toString("base64url");
+  const encodedSignature = Buffer.from(signature)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
 
   return `${objectToHex(header)}${JWT_DELIMITER}${objectToHex(
     payload

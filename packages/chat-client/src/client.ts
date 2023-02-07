@@ -185,26 +185,13 @@ export class ChatClient extends IChatClient {
   };
 
   public getSentInvites: IChatClient["getSentInvites"] = ({ account }) => {
-    return this.chatSentInvites
-      .getAll({ inviterAccount: account })
-      .reduce<Map<number, ChatClientTypes.SentInvite>>((inviteMap, invite) => {
-        if (invite.id) inviteMap.set(invite.id, invite);
-        return inviteMap;
-      }, new Map());
+    return this.chatSentInvites.getAll({ inviterAccount: account });
   };
 
   public getReceivedInvites: IChatClient["getReceivedInvites"] = ({
     account,
   }) => {
-    return this.chatReceivedInvites
-      .getAll({ inviterAccount: account })
-      .reduce<Map<number, ChatClientTypes.ReceivedInvite>>(
-        (inviteMap, invite) => {
-          if (invite.id) inviteMap.set(invite.id, invite);
-          return inviteMap;
-        },
-        new Map()
-      );
+    return this.chatReceivedInvites.getAll({ inviteeAccount: account });
   };
 
   public getThreads: IChatClient["getThreads"] = (params) => {

@@ -39,7 +39,6 @@ import {
   jwtExp,
 } from "../utils/jwtAuth";
 import jwt from "jsonwebtoken";
-import { isAddress } from "@ethersproject/address";
 
 export class ChatEngine extends IChatEngine {
   private initialized = false;
@@ -107,8 +106,7 @@ export class ChatEngine extends IChatEngine {
 
   private registerIdentity = async (
     accountId: string,
-    onSign: (message: string) => Promise<string>,
-    priv = false
+    onSign: (message: string) => Promise<string>
   ): Promise<string> => {
     try {
       const storedKeyPair = this.client.chatKeys.get(accountId);
@@ -308,7 +306,7 @@ export class ChatEngine extends IChatEngine {
       pke: encodeX25519Key(pubkeyY),
       ksu: this.keyserverUrl,
       sub: message,
-      aud: inviteeAccount,
+      aud: composeDidPkh(inviteeAccount),
     };
 
     const idAuth = await this.generateIdAuth(
@@ -338,7 +336,7 @@ export class ChatEngine extends IChatEngine {
     const inviteId = await this.sendRequest(
       inviteTopic,
       "wc_chatInvite",
-      { idAuth },
+      { inviteAuth: idAuth },
       {
         type: TYPE_1,
         senderPublicKey: pubkeyY,
@@ -378,9 +376,7 @@ export class ChatEngine extends IChatEngine {
       keys.inviteKeyPub
     );
 
-    const decodedInvitePubKey = ed25519.utils.bytesToHex(
-      decodeX25519Key(invite.inviterPublicKey)
-    );
+    const decodedInvitePubKey = invite.inviterPublicKey;
 
     const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
       keys.inviteKeyPub,
@@ -423,7 +419,7 @@ export class ChatEngine extends IChatEngine {
 
     // B sends response with publicKey Z on response topic encrypted with type 0 envelope.
     await this.sendResult<"wc_chatInvite">(id, responseTopic, {
-      idAuth,
+      responseAuth: idAuth,
     });
 
     // Subscribe to the chat thread topic.
@@ -497,7 +493,10 @@ export class ChatEngine extends IChatEngine {
     };
 
     await this.sendRequest(payload.topic, "wc_chatMessage", {
-      idAuth: await this.generateIdAuth(this.currentAccount, messagePayload),
+      messageAuth: await this.generateIdAuth(
+        this.currentAccount,
+        messagePayload
+      ),
     });
 
     console.log("----- SEND MSG");
@@ -700,25 +699,32 @@ export class ChatEngine extends IChatEngine {
     try {
       const { id, params } = payload;
 
-      const decodedPayload = jwt.decode(params.idAuth, {
+      const decodedPayload = jwt.decode(params.inviteAuth, {
         json: true,
       }) as Record<string, string>;
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
 
-      const { inviteKeyPub } = this.client.chatKeys.get(decodedPayload.aud);
+      const { inviteKeyPub } = this.client.chatKeys.get(
+        decodedPayload.aud.split(":").slice(2).join(":")
+      );
 
       const invitePayload: ChatClientTypes.ReceivedInvite = {
         id,
-        inviteeAccount: decodedPayload.aud,
+        inviteeAccount: decodedPayload.aud.split(":").slice(2).join(":"),
         message: decodedPayload.sub,
         inviterAccount: (
           await this.resolveIdentity({
             publicKey: decodedPayload.iss,
           })
-        ).p.iss,
+        ).p.iss
+          .split(":")
+          .slice(2)
+          .join(":"),
         inviteePublicKey: inviteKeyPub,
-        inviterPublicKey: decodedPayload.pke,
+        inviterPublicKey: ed25519.utils.bytesToHex(
+          decodeX25519Key(decodedPayload.pke)
+        ),
       };
 
       await this.client.chatReceivedInvites.set(id, { ...invitePayload, id });
@@ -743,7 +749,7 @@ export class ChatEngine extends IChatEngine {
     // TODO (post-MVP): input validation
     if (isJsonRpcResult(payload)) {
       const pubkeyY = this.client.core.crypto.keychain.get(`${topic}-pubkeyY`);
-      const decodedPayload = jwt.decode(payload.result.idAuth, {
+      const decodedPayload = jwt.decode(payload.result.responseAuth, {
         json: true,
       }) as Record<string, string>;
 
@@ -822,7 +828,7 @@ export class ChatEngine extends IChatEngine {
     try {
       // TODO (post-MVP): input validation
       console.log("GOT MESSAGE >>", { params });
-      const decodedPayload = jwt.decode(params.idAuth, {
+      const decodedPayload = jwt.decode(params.messageAuth, {
         json: true,
       }) as Record<string, string>;
 

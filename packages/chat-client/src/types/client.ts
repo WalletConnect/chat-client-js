@@ -2,7 +2,6 @@ import { ICore, IStore, CoreTypes } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "@walletconnect/logger";
 import { IChatEngine } from "./engine";
-import { Cacao } from "@walletconnect/utils";
 
 export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
@@ -166,12 +165,12 @@ export abstract class IChatClient {
   // returns all sent invites matching an account / returns maps of invites indexed by id
   public abstract getSentInvites(params: {
     account: string;
-  }): Map<number, ChatClientTypes.SentInvite>;
+  }): ChatClientTypes.SentInvite[];
 
   // returns all received invites matching an account / returns maps of invites indexed by id
   public abstract getReceivedInvites(params: {
     account: string;
-  }): Map<number, ChatClientTypes.ReceivedInvite>;
+  }): ChatClientTypes.ReceivedInvite[];
 
   // returns all threads matching an account / returns map of threads indexed by topic
   public abstract getThreads(params?: {
