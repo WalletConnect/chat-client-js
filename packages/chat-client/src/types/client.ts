@@ -10,23 +10,37 @@ export declare namespace ChatClientTypes {
   }
 
   // ---------- Data Types ----------------------------------------------- //
-  interface PartialInvite {
-    message: string;
-    account: string;
-    signature?: string;
+  interface Invite {
+    message: string; // character limit is 200. Must be checked by SDK before sending
+    inviterAccount: string;
+    inviteeAccount: string;
+    inviteePublicKey: string;
   }
 
-  interface Invite extends PartialInvite {
-    publicKey: string;
-    id?: number;
+  interface SentInvite {
+    id: number;
+    message: string; // character limit is 200
+    inviterAccount: string;
+    inviteeAccount: string;
+    status: "pending" | "rejected";
+  }
+
+  interface ReceivedInvite {
+    id: number; // invite request RPC ID
+    message: string; // character limit is 200.
+    inviterAccount: string;
+    inviteeAccount: string;
+    inviterPublicKey: string;
+    inviteePublicKey: string;
   }
 
   interface Media {
     type: string;
-    data: string;
+    data: string; // character limit is 500.
   }
 
   interface Message {
+    topic: string;
     message: string;
     authorAccount: string;
     timestamp: number;
@@ -86,7 +100,11 @@ export abstract class IChatClient {
   public abstract core: ICore;
   public abstract events: EventEmitter;
   public abstract logger: Logger;
-  public abstract chatInvites: IStore<number, ChatClientTypes.Invite>;
+  public abstract chatReceivedInvites: IStore<
+    number,
+    ChatClientTypes.ReceivedInvite
+  >;
+  public abstract chatSentInvites: IStore<number, ChatClientTypes.SentInvite>;
   public abstract chatContacts: IStore<string, ChatClientTypes.Contact>;
   public abstract chatThreads: IStore<string, ChatClientTypes.Thread>;
   public abstract chatThreadsPending: IStore<
@@ -119,17 +137,10 @@ export abstract class IChatClient {
     private?: boolean;
   }): Promise<string>;
 
-  public abstract resolveIdentity(params: {
-    publicKey: string;
-  }): Promise<Cacao>;
-
-  public abstract resolveInvite(params: { account: string }): Promise<string>;
+  public abstract resolve(params: { account: string }): Promise<string>;
 
   // sends a chat invite to peer account / returns an invite id
-  public abstract invite(params: {
-    account: string;
-    invite: ChatClientTypes.PartialInvite;
-  }): Promise<number>;
+  public abstract invite(params: ChatClientTypes.Invite): Promise<number>;
 
   // accepts a chat invite by id / returns thread topic
   public abstract accept(params: { id: number }): Promise<string>;
@@ -138,10 +149,7 @@ export abstract class IChatClient {
   public abstract reject(params: { id: number }): Promise<void>;
 
   // sends a chat message to an active chat thread
-  public abstract message(params: {
-    topic: string;
-    payload: ChatClientTypes.Message;
-  }): Promise<void>;
+  public abstract message(params: ChatClientTypes.Message): Promise<void>;
 
   // ping chat peer to evaluate if it's currently online
   public abstract ping(params: { topic: string }): Promise<void>;
@@ -155,10 +163,15 @@ export abstract class IChatClient {
   //   publicKey: string;
   // }): Promise<void>;
 
-  // returns all invites matching an account / returns maps of invites indexed by id
-  public abstract getInvites(params?: {
+  // returns all sent invites matching an account / returns maps of invites indexed by id
+  public abstract getSentInvites(params: {
     account: string;
-  }): Map<number, ChatClientTypes.Invite>;
+  }): Map<number, ChatClientTypes.SentInvite>;
+
+  // returns all received invites matching an account / returns maps of invites indexed by id
+  public abstract getReceivedInvites(params: {
+    account: string;
+  }): Map<number, ChatClientTypes.ReceivedInvite>;
 
   // returns all threads matching an account / returns map of threads indexed by topic
   public abstract getThreads(params?: {

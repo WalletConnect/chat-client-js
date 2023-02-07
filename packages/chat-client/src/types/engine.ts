@@ -32,21 +32,19 @@ export abstract class IChatEngine {
     publicKey: string;
   }): Promise<Cacao>;
 
+  public abstract goPrivate(params: { account: string }): Promise<void>;
+
+  public abstract goPublic(params: { account: string }): Promise<string>;
+
   public abstract resolveInvite(params: { account: string }): Promise<string>;
 
-  public abstract invite(params: {
-    account: string;
-    invite: ChatClientTypes.PartialInvite;
-  }): Promise<number>;
+  public abstract invite(params: ChatClientTypes.Invite): Promise<number>;
 
   public abstract accept(params: { id: number }): Promise<string>;
 
   public abstract reject(params: { id: number }): Promise<void>;
 
-  public abstract sendMessage(params: {
-    topic: string;
-    payload: ChatClientTypes.Message;
-  }): Promise<void>;
+  public abstract sendMessage(params: ChatClientTypes.Message): Promise<void>;
 
   public abstract ping(params: { topic: string }): Promise<void>;
 

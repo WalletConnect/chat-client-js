@@ -13,6 +13,8 @@ import {
   CHAT_THREADS_CONTEXT,
   CHAT_THREADS_PENDING_CONTEXT,
   CHAT_CONTACTS_CONTEXT,
+  CHAT_RECEIVED_INVITES_CONTEXT,
+  CHAT_SENT_INVITES_CONTEXT,
 } from "./constants";
 import { CHAT_KEYS_CONTEXT } from "./constants/chatKeys";
 
@@ -25,7 +27,8 @@ export class ChatClient extends IChatClient {
   public core: ICore;
   public events = new EventEmitter();
   public logger: IChatClient["logger"];
-  public chatInvites: IChatClient["chatInvites"];
+  public chatSentInvites: IChatClient["chatSentInvites"];
+  public chatReceivedInvites: IChatClient["chatReceivedInvites"];
   public chatThreads: IChatClient["chatThreads"];
   public chatThreadsPending: IChatClient["chatThreadsPending"];
   public chatMessages: IChatClient["chatMessages"];
@@ -54,12 +57,26 @@ export class ChatClient extends IChatClient {
 
     this.core = opts?.core || new Core(opts);
     this.logger = generateChildLogger(logger, this.name);
-    this.chatInvites = new Store(
+    this.chatSentInvites = new Store(
       this.core,
       this.logger,
       CHAT_CLIENT_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX,
-      (invite: ChatClientTypes.Invite) => invite.id
+      (invite: ChatClientTypes.ReceivedInvite) => invite.id
+    );
+    this.chatSentInvites = new Store(
+      this.core,
+      this.logger,
+      CHAT_SENT_INVITES_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX,
+      (invite: ChatClientTypes.SentInvite) => invite.id
+    );
+    this.chatReceivedInvites = new Store(
+      this.core,
+      this.logger,
+      CHAT_RECEIVED_INVITES_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX,
+      (invite: ChatClientTypes.ReceivedInvite) => invite.id
     );
     this.chatThreads = new Store(
       this.core,
@@ -105,17 +122,7 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  public resolveIdentity: IChatClient["resolveIdentity"] = async (params) => {
-    try {
-      console.log("RESOLVING THE KEY", params);
-      return await this.engine.resolveIdentity(params);
-    } catch (error: any) {
-      this.logger.error(error.message);
-      throw error;
-    }
-  };
-
-  public resolveInvite: IChatClient["resolveInvite"] = async (params) => {
+  public resolve: IChatClient["resolve"] = async (params) => {
     try {
       return await this.engine.resolveInvite(params);
     } catch (error: any) {
@@ -177,28 +184,27 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  public getInvites: IChatClient["getInvites"] = (params) => {
-    try {
-      return this.chatInvites
-        .getAll(
-          params?.account
-            ? {
-                account: params.account,
-              }
-            : undefined
-        )
-        .reduce<Map<number, ChatClientTypes.Invite>>((inviteMap, invite) => {
-          if (!invite.id)
-            throw new Error(
-              "Invites need id specified in the map values as well as the keys"
-            );
-          inviteMap.set(invite.id, invite);
+  public getSentInvites: IChatClient["getSentInvites"] = ({ account }) => {
+    return this.chatSentInvites
+      .getAll({ inviterAccount: account })
+      .reduce<Map<number, ChatClientTypes.SentInvite>>((inviteMap, invite) => {
+        if (invite.id) inviteMap.set(invite.id, invite);
+        return inviteMap;
+      }, new Map());
+  };
+
+  public getReceivedInvites: IChatClient["getReceivedInvites"] = ({
+    account,
+  }) => {
+    return this.chatReceivedInvites
+      .getAll({ inviterAccount: account })
+      .reduce<Map<number, ChatClientTypes.ReceivedInvite>>(
+        (inviteMap, invite) => {
+          if (invite.id) inviteMap.set(invite.id, invite);
           return inviteMap;
-        }, new Map());
-    } catch (error: any) {
-      this.logger.error(error.message);
-      throw error;
-    }
+        },
+        new Map()
+      );
   };
 
   public getThreads: IChatClient["getThreads"] = (params) => {
@@ -262,7 +268,8 @@ export class ChatClient extends IChatClient {
     this.logger.trace(`Initialized`);
     try {
       await this.core.start();
-      await this.chatInvites.init();
+      await this.chatSentInvites.init();
+      await this.chatReceivedInvites.init();
       await this.chatThreads.init();
       await this.chatThreadsPending.init();
       await this.chatMessages.init();
