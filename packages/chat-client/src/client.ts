@@ -107,6 +107,7 @@ export class ChatClient extends IChatClient {
 
   public resolveIdentity: IChatClient["resolveIdentity"] = async (params) => {
     try {
+      console.log("RESOLVING THE KEY", params);
       return await this.engine.resolveIdentity(params);
     } catch (error: any) {
       this.logger.error(error.message);

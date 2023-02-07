@@ -112,13 +112,10 @@ export const decodeX25519Key = (encoded: string) => {
 };
 
 export const generateJWT = async (
-  invitePublicKey: string,
   identityKeyPair: [string, string],
-  keyserverUrl: string,
-  account: string,
   payload: InviteKeyClaims
 ) => {
-  const [publicKey, privateKey] = identityKeyPair;
+  const [, privateKey] = identityKeyPair;
 
   const header: JwtHeader = {
     alg: "EdDSA",

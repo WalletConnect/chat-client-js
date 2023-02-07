@@ -104,7 +104,7 @@ export abstract class IChatEngine {
 
   protected abstract onIncomingMessage(
     topic: string,
-    payload: JsonRpcRequest<ChatClientTypes.Message>
+    payload: JsonRpcRequest<{ idAuth: string }>
   ): Promise<void>;
 
   protected abstract onRejectedChatInvite(params: {
