@@ -2,7 +2,7 @@ import { ONE_DAY, THIRTY_SECONDS } from "@walletconnect/time";
 import { RelayerTypes } from "@walletconnect/types";
 import { JsonRpcTypes } from "../types";
 
-export const KEYSERVER_URL = "https://keys.walletconnect.com";
+export const KEYSERVER_URL = "https://staging.keys.walletconnect.com";
 
 export const ENGINE_RPC_OPTS: Record<
   JsonRpcTypes.WcMethod,

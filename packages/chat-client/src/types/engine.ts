@@ -6,6 +6,7 @@ import {
   JsonRpcResult,
 } from "@walletconnect/jsonrpc-utils";
 import { CryptoTypes } from "@walletconnect/types";
+import { Cacao } from "@walletconnect/utils";
 import { ChatClientTypes, IChatClient } from "./client";
 import { JsonRpcTypes } from "./jsonrpc";
 
@@ -23,24 +24,27 @@ export abstract class IChatEngine {
 
   public abstract register(params: {
     account: string;
+    onSign: (message: string) => Promise<string>;
     private?: boolean;
   }): Promise<string>;
 
-  public abstract resolve(params: { account: string }): Promise<string>;
+  public abstract resolveIdentity(params: {
+    publicKey: string;
+  }): Promise<Cacao>;
 
-  public abstract invite(params: {
-    account: string;
-    invite: ChatClientTypes.PartialInvite;
-  }): Promise<number>;
+  public abstract goPrivate(params: { account: string }): Promise<void>;
+
+  public abstract goPublic(params: { account: string }): Promise<string>;
+
+  public abstract resolveInvite(params: { account: string }): Promise<string>;
+
+  public abstract invite(params: ChatClientTypes.Invite): Promise<number>;
 
   public abstract accept(params: { id: number }): Promise<string>;
 
   public abstract reject(params: { id: number }): Promise<void>;
 
-  public abstract sendMessage(params: {
-    topic: string;
-    payload: ChatClientTypes.Message;
-  }): Promise<void>;
+  public abstract sendMessage(params: ChatClientTypes.Message): Promise<void>;
 
   public abstract ping(params: { topic: string }): Promise<void>;
 
@@ -88,17 +92,17 @@ export abstract class IChatEngine {
 
   protected abstract onIncomingInvite(
     topic: string,
-    payload: JsonRpcRequest<ChatClientTypes.Invite>
+    payload: JsonRpcRequest<{ inviteAuth: string }>
   ): Promise<void>;
 
   protected abstract onInviteResponse(
     topic: string,
-    payload: JsonRpcResult<{ publicKey: string }> | JsonRpcError
+    payload: JsonRpcResult<{ responseAuth: string }> | JsonRpcError
   ): void;
 
   protected abstract onIncomingMessage(
     topic: string,
-    payload: JsonRpcRequest<ChatClientTypes.Message>
+    payload: JsonRpcRequest<{ messageAuth: string }>
   ): Promise<void>;
 
   protected abstract onRejectedChatInvite(params: {

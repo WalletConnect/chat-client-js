@@ -1,4 +1,5 @@
 import { expect, describe, it, beforeEach, afterEach, vi } from "vitest";
+import { Wallet } from "@ethersproject/wallet";
 import { generateRandomBytes32 } from "@walletconnect/utils";
 import ChatClient from "../../src";
 import { ChatClientTypes } from "../../src/types";
@@ -7,10 +8,7 @@ import { disconnectSocket } from "../helpers/ws";
 if (!process.env.TEST_PROJECT_ID) {
   throw new ReferenceError("TEST_PROJECT_ID env var not set");
 }
-
-const TEST_CLIENT_ACCOUNT =
-  "eip155:1:0xf07A0e1454771826472AE22A212575296f309c8C";
-const TEST_PEER_ACCOUNT = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
+const composeChainAddress = (address: string) => `eip155:1:${address}`;
 
 // Polls boolean value every interval to check for an event callback having been triggered.
 const waitForEvent = async (checkForEvent: (...args: any[]) => boolean) => {
@@ -58,38 +56,79 @@ describe("ChatClient", () => {
   });
 
   it("can register an account on the keyserver", async () => {
-    const publicKey = await client.register({
-      account: TEST_CLIENT_ACCOUNT,
-    });
-    const peerPublicKey = await peer.register({
-      account: TEST_PEER_ACCOUNT,
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
+    await client.register({
+      account: composeChainAddress(walletSelf.address),
+      onSign: (message) => walletSelf.signMessage(message),
     });
 
-    expect(publicKey.length).toBeGreaterThan(0);
-    expect(peerPublicKey.length).toBeGreaterThan(0);
+    await peer.register({
+      account: composeChainAddress(walletPeer.address),
+      onSign: (message) => walletPeer.signMessage(message),
+    });
+
+    const selfKeys = client.chatKeys.get(
+      composeChainAddress(walletSelf.address)
+    );
+    const peerKeys = peer.chatKeys.get(composeChainAddress(walletPeer.address));
+
+    expect(selfKeys.identityKeyPub.length).toBeGreaterThan(0);
+    expect(selfKeys.identityKeyPriv.length).toBeGreaterThan(0);
+    expect(selfKeys.inviteKeyPub.length).toBeGreaterThan(0);
+    expect(selfKeys.inviteKeyPriv.length).toBeGreaterThan(0);
+    expect(peerKeys.identityKeyPub.length).toBeGreaterThan(0);
+    expect(peerKeys.identityKeyPriv.length).toBeGreaterThan(0);
+    expect(peerKeys.inviteKeyPub.length).toBeGreaterThan(0);
+    expect(peerKeys.inviteKeyPriv.length).toBeGreaterThan(0);
   });
 
   it("can resolve an account on the keyserver", async () => {
-    const publicKey = await peer.resolve({
-      account: TEST_CLIENT_ACCOUNT,
-    });
-    const peerPublicKey = await client.resolve({
-      account: TEST_PEER_ACCOUNT,
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
+
+    const peerIdentityPublicKey = await peer.register({
+      account: composeChainAddress(walletPeer.address),
+      onSign: (message) => walletPeer.signMessage(message),
     });
 
-    expect(publicKey.length).toBeGreaterThan(0);
-    expect(peerPublicKey.length).toBeGreaterThan(0);
+    const selfIdentityPublicKey = await client.register({
+      account: `eip155:1:${walletSelf.address}`,
+      onSign: (message) => walletSelf.signMessage(message),
+    });
+
+    const selfIdentityCacao = await peer.engine.resolveIdentity({
+      publicKey: `${selfIdentityPublicKey}`,
+    });
+
+    const peerIdentityCacao = await client.engine.resolveIdentity({
+      publicKey: `${peerIdentityPublicKey}`,
+    });
+
+    expect(selfIdentityCacao.p.iss).toEqual(
+      `did:pkh:eip155:1:${walletSelf.address}`
+    );
+    expect(peerIdentityCacao.p.iss).toEqual(
+      `did:pkh:eip155:1:${walletPeer.address}`
+    );
   });
 
   it("can send & receive invites", async () => {
     let peerReceivedInvite = false;
     let peerJoinedChat = false;
 
-    const peerInvitePublicKey = await peer.register({
-      account: TEST_PEER_ACCOUNT,
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
+
+    await peer.register({
+      account: composeChainAddress(walletPeer.address),
+      onSign: (message) => walletPeer.signMessage(message),
     });
 
-    client.resolve = vi.fn(() => Promise.resolve(peerInvitePublicKey));
+    await client.register({
+      account: composeChainAddress(walletSelf.address),
+      onSign: (message) => walletSelf.signMessage(message),
+    });
 
     peer.on("chat_invite", async (args) => {
       const { id } = args;
@@ -106,15 +145,16 @@ describe("ChatClient", () => {
       peerJoinedChat = true;
     });
 
-    const invite: ChatClientTypes.PartialInvite = {
+    const invite: ChatClientTypes.Invite = {
       message: "hey let's chat",
-      account: TEST_CLIENT_ACCOUNT,
+      inviterAccount: composeChainAddress(walletSelf.address),
+      inviteeAccount: composeChainAddress(walletPeer.address),
+      inviteePublicKey: await client.resolve({
+        account: composeChainAddress(walletPeer.address),
+      }),
     };
 
-    const inviteId = await client.invite({
-      account: TEST_PEER_ACCOUNT,
-      invite,
-    });
+    const inviteId = await client.invite(invite);
 
     await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
 
@@ -122,74 +162,131 @@ describe("ChatClient", () => {
   });
 
   it("can send & receive messages", async () => {
-    const symKey = generateRandomBytes32();
-    const payload = {
-      message: "some message",
-      authorAccount: "0xabc",
-      timestamp: 123,
-    };
+    let peerReceivedInvite = false;
+    let peerJoinedChat = false;
     let eventCount = 0;
 
-    await client.core.crypto.setSymKey(symKey);
-    const topic = await peer.core.crypto.setSymKey(symKey);
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
 
-    // Manually subscribe to the fake thread topic for now.
-    await client.core.relayer.subscribe(topic);
-    await peer.core.relayer.subscribe(topic);
+    const payloadTimestamp = Date.now();
+
+    await peer.register({
+      account: composeChainAddress(walletPeer.address),
+      onSign: (message) => walletPeer.signMessage(message),
+    });
+
+    await client.register({
+      account: composeChainAddress(walletSelf.address),
+      onSign: (message) => walletSelf.signMessage(message),
+    });
+
+    peer.on("chat_invite", async (args) => {
+      const { id } = args;
+      console.log("chat_invite:", args);
+      const chatThreadTopic = await peer.accept({ id });
+      expect(chatThreadTopic).toBeDefined();
+      peerReceivedInvite = true;
+    });
+
+    client.on("chat_joined", async (args) => {
+      const { topic } = args;
+      console.log("chat_joined:", args);
+      expect(topic).toBeDefined();
+      peerJoinedChat = true;
+    });
+
+    const invite: ChatClientTypes.Invite = {
+      message: "hey let's chat",
+      inviterAccount: composeChainAddress(walletSelf.address),
+      inviteeAccount: composeChainAddress(walletPeer.address),
+      inviteePublicKey: await client.resolve({
+        account: composeChainAddress(walletPeer.address),
+      }),
+    };
+
+    await client.invite(invite);
 
     peer.on("chat_message", async () => {
       eventCount++;
     });
 
-    await client.message({
+    await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
+
+    const thread = client.chatThreads.getAll()[0];
+    const { topic } = thread;
+
+    const payload = {
       topic,
-      payload,
+      message: "some message",
+      authorAccount: composeChainAddress(walletSelf.address),
+      timestamp: payloadTimestamp,
+    };
+
+    await client.message({
+      ...payload,
     });
+
+    await waitForEvent(() => Boolean(eventCount));
+
+    const messagesMatch = (
+      m1: ChatClientTypes.Message,
+      m2: ChatClientTypes.Message
+    ) => {
+      console.log({ m1, m2 });
+      return (
+        m1.authorAccount === m2.authorAccount &&
+        m1.message === m2.message &&
+        m1.timestamp === m2.timestamp
+      );
+    };
 
     expect(client.chatMessages.keys.length).toBe(1);
-    expect(client.chatMessages.get(topic)).toEqual({
-      topic,
-      messages: [payload],
-    });
+    const clientMessage = client.chatMessages.get(topic).messages[0];
+    expect(messagesMatch(clientMessage, payload)).toBeTruthy();
     expect(peer.chatMessages.keys.length).toBe(1);
-    expect(peer.chatMessages.get(topic)).toEqual({
-      topic,
-      messages: [payload],
-    });
+    const peerMessage = peer.chatMessages.get(topic).messages[0];
+    expect(messagesMatch(peerMessage, payload)).toBeTruthy();
 
     await client.message({
-      topic,
-      payload,
+      ...payload,
     });
 
     await waitForEvent(() => eventCount === 2);
 
     expect(client.chatMessages.keys.length).toBe(1);
-    expect(client.chatMessages.get(topic)).toEqual({
-      topic,
-      messages: [payload, payload],
-    });
+    const clientMessages = client.chatMessages.get(topic).messages;
+    expect(
+      clientMessages.every((message) => messagesMatch(message, payload))
+    ).toBeTruthy();
     expect(peer.chatMessages.keys.length).toBe(1);
-    expect(peer.chatMessages.get(topic)).toEqual({
-      topic,
-      messages: [payload, payload],
-    });
+    const peerMessages = peer.chatMessages.get(topic).messages;
+    expect(
+      peerMessages.every((message) => messagesMatch(message, payload))
+    ).toBeTruthy();
+
     expect(eventCount).toBe(2);
   });
 
   describe("ping", () => {
     it("can ping a known chat peer", async () => {
+      const walletSelf = Wallet.createRandom();
+      const walletPeer = Wallet.createRandom();
       // TODO: abstract this step, it duplicates the invite test above.
       // Set up an acknowledged chat thread
       let chatThreadTopic = "";
       let peerReceivedInvite = false;
       let peerJoinedChat = false;
 
-      const peerInvitePublicKey = await peer.register({
-        account: TEST_PEER_ACCOUNT,
+      await peer.register({
+        account: composeChainAddress(walletPeer.address),
+        onSign: (message) => walletPeer.signMessage(message),
       });
 
-      client.resolve = vi.fn(() => Promise.resolve(peerInvitePublicKey));
+      await client.register({
+        account: composeChainAddress(walletSelf.address),
+        onSign: (message) => walletSelf.signMessage(message),
+      });
 
       peer.on("chat_invite", async (args) => {
         const { id } = args;
@@ -206,15 +303,16 @@ describe("ChatClient", () => {
         peerJoinedChat = true;
       });
 
-      const invite: ChatClientTypes.PartialInvite = {
+      const invite: ChatClientTypes.Invite = {
         message: "hey let's chat",
-        account: TEST_CLIENT_ACCOUNT,
+        inviterAccount: composeChainAddress(walletSelf.address),
+        inviteeAccount: composeChainAddress(walletPeer.address),
+        inviteePublicKey: await client.resolve({
+          account: composeChainAddress(walletPeer.address),
+        }),
       };
 
-      await client.invite({
-        account: TEST_PEER_ACCOUNT,
-        invite,
-      });
+      await client.invite(invite);
 
       await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
 
@@ -234,21 +332,23 @@ describe("ChatClient", () => {
     it("returns all current invites", async () => {
       const mockInviteId = 1666697147892830;
       const account = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
+      const peerAccount = account.replace("81F", "81D");
       const id = 1666697147892830;
-      const mockInvite = {
-        id,
+      const mockInvite: ChatClientTypes.ReceivedInvite = {
         message: "hey let's chat",
-        account,
-        publicKey:
+        inviterAccount: peerAccount,
+        inviteeAccount: account,
+        id: mockInviteId,
+        inviterPublicKey:
+          "511dc223dcf4b4a0148009785fe5c247d4e9ece7e8bd83db3082d6f1cdc07e26",
+        inviteePublicKey:
           "511dc223dcf4b4a0148009785fe5c247d4e9ece7e8bd83db3082d6f1cdc07e16",
       };
-      await client.chatInvites.set(mockInviteId, mockInvite);
+      await client.chatReceivedInvites.set(mockInviteId, mockInvite);
 
-      expect(client.getInvites().size).toBe(1);
-      expect(client.getInvites().get(mockInviteId)).toEqual(mockInvite);
-      expect(client.getInvites({ account })).toEqual(
-        new Map([[id, mockInvite]])
-      );
+      expect(client.getReceivedInvites({ account }).length).toBe(1);
+      expect(client.chatReceivedInvites.get(mockInviteId)).toEqual(mockInvite);
+      expect(client.getReceivedInvites({ account })).toEqual([mockInvite]);
     });
   });
 
@@ -282,11 +382,13 @@ describe("ChatClient", () => {
       const topic = generateRandomBytes32();
       const mockChatMessages = [
         {
+          topic,
           message: "eyo",
           authorAccount: "eip155:3:0xab16a96d359ec26a11e2c2b3d8f8b8942d5bfcdb",
           timestamp: 1666697158617,
         },
         {
+          topic,
           message: "sup",
           authorAccount: "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F",
           timestamp: 1666697164166,
