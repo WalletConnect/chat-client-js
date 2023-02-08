@@ -31,6 +31,18 @@ export const JWT_DELIMITER = ".";
 export const MULTICODEC_ED25519_HEADER = "K36";
 export const MULTICODEC_X25519_HEADER = "Jxg";
 
+// Buffer.toString("base64url") isn't supported in every dev environment, eg it
+// might work when run in node, but when built in vite and other
+// inconsistencies. This just achieves what base64url already does,
+// which is base64 encode the buffer, but instead of +, use - and
+// instead of / use _ and remove any padding (=).
+const makeBase64UrlSafe = (base64EncodedString: string) => {
+  return base64EncodedString
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+};
+
 const concatUInt8Arrays = (array1: Uint8Array, array2: Uint8Array) => {
   const mergedArray = new Uint8Array(array1.length + array2.length);
   mergedArray.set(array1);
@@ -52,12 +64,11 @@ const objectToHex = (obj: unknown) => {
     throw new Error(`Supplied object is not valid ${JSON.stringify(obj)}`);
   }
 
-  // toString("base64url") isn't universally supported.
-  return Buffer.from(new TextEncoder().encode(JSON.stringify(obj)))
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+  return makeBase64UrlSafe(
+    Buffer.from(new TextEncoder().encode(JSON.stringify(obj))).toString(
+      "base64"
+    )
+  );
 };
 
 export const encodeJwt = (
@@ -65,11 +76,9 @@ export const encodeJwt = (
   payload: InviteKeyClaims,
   signature: Uint8Array
 ) => {
-  const encodedSignature = Buffer.from(signature)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+  const encodedSignature = makeBase64UrlSafe(
+    Buffer.from(signature).toString("base64")
+  );
 
   return `${objectToHex(header)}${JWT_DELIMITER}${objectToHex(
     payload
