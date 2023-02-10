@@ -2,6 +2,74 @@ import { ICore, IStore, CoreTypes } from "@walletconnect/types";
 import EventEmitter from "events";
 import { Logger } from "@walletconnect/logger";
 import { IChatEngine } from "./engine";
+import { z } from "zod";
+
+export const ZAccount = z.string().regex(/.*:.*:.*/, {
+  message: `Must be valid address with chain specifier.`,
+});
+
+const ZPublicKey = z.string().max(100);
+
+export const ZInvite = z.object({
+  message: z.string().max(200),
+  inviterAccount: ZAccount,
+  inviteeAccount: ZAccount,
+  inviteePublicKey: ZPublicKey,
+});
+
+export const ZMedia = z.object({
+  type: z.string().max(20),
+  data: z.string().max(500),
+});
+
+export const ZSentInvite = z.object({
+  id: z.number(),
+  message: z.string().max(200),
+  inviterAccount: ZAccount,
+  inviteeAccount: ZAccount,
+  status: z.enum(["pending", "rejected"]),
+});
+
+export const ZReceivedInvite = z.object({
+  id: z.number(),
+  message: z.string().max(200),
+  inviterAccount: ZAccount,
+  inviteeAccount: ZAccount,
+  inviterPublicKey: ZPublicKey,
+  inviteePublicKey: ZPublicKey,
+});
+
+export const ZMessage = z.object({
+  topic: z.string().max(80),
+  message: z.string().max(2000),
+  authorAccount: ZAccount,
+  timestamp: z.number(),
+  media: ZMedia.nullish(),
+});
+
+export const ZThread = z.object({
+  topic: z.string().max(80),
+  selfAccount: ZAccount,
+  peerAccount: ZAccount,
+});
+
+export const ZPendingThread = z.object({
+  topic: z.string().max(80).nullable(),
+  selfAccount: ZAccount,
+  peerAccount: ZAccount,
+});
+
+export const ZContact = z.object({
+  accountId: ZAccount,
+  publicKey: ZPublicKey,
+  displayName: z.string().max(40).or(z.undefined()),
+});
+
+export const ZChatKey = z.object({
+  _key: z.string(),
+  account: ZAccount,
+  publicKey: ZPublicKey,
+});
 
 export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
@@ -9,66 +77,25 @@ export declare namespace ChatClientTypes {
   }
 
   // ---------- Data Types ----------------------------------------------- //
-  interface Invite {
-    message: string; // character limit is 200. Must be checked by SDK before sending
-    inviterAccount: string;
-    inviteeAccount: string;
-    inviteePublicKey: string;
-  }
 
-  interface SentInvite {
-    id: number;
-    message: string; // character limit is 200
-    inviterAccount: string;
-    inviteeAccount: string;
-    status: "pending" | "rejected";
-  }
+  type Invite = z.infer<typeof ZInvite>;
 
-  interface ReceivedInvite {
-    id: number; // invite request RPC ID
-    message: string; // character limit is 200.
-    inviterAccount: string;
-    inviteeAccount: string;
-    inviterPublicKey: string;
-    inviteePublicKey: string;
-  }
+  type SentInvite = z.infer<typeof ZSentInvite>;
 
-  interface Media {
-    type: string;
-    data: string; // character limit is 500.
-  }
+  type ReceivedInvite = z.infer<typeof ZReceivedInvite>;
 
-  interface Message {
-    topic: string;
-    message: string;
-    authorAccount: string;
-    timestamp: number;
-    media?: Media;
-  }
+  type Media = z.infer<typeof ZMedia>;
 
-  interface Thread {
-    topic: string;
-    selfAccount: string;
-    peerAccount: string;
-  }
+  type Message = z.infer<typeof ZMessage>;
 
-  interface PendingThread {
-    topic: string | null;
-    selfAccount: string;
-    peerAccount: string;
-  }
+  type Thread = z.infer<typeof ZThread>;
 
-  interface Contact {
-    accountId: string;
-    publicKey: string;
-    displayName?: string;
-  }
+  type PendingThread = z.infer<typeof ZPendingThread>;
 
-  interface ChatKey {
-    _key: string;
-    account: string | null;
-    publicKey: string | null;
-  }
+  type Contact = z.infer<typeof ZContact>;
+
+  type ChatKey = z.infer<typeof ZChatKey>;
+
   // ---------- Event Types ----------------------------------------------- //
 
   type Event =

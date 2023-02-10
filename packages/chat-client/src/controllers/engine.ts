@@ -27,6 +27,10 @@ import {
   IChatClient,
   IChatEngine,
   JsonRpcTypes,
+  ZAccount,
+  ZInvite,
+  ZMedia,
+  ZMessage,
 } from "../types";
 import { engineEvent } from "../utils/engineUtil";
 import {
@@ -235,6 +239,8 @@ export class ChatEngine extends IChatEngine {
   };
 
   public register: IChatEngine["register"] = async ({ account, onSign }) => {
+    ZAccount.parse(account);
+
     const identityKey = await this.registerIdentity(account, onSign);
     await this.registerInvite(account, false);
 
@@ -275,13 +281,11 @@ export class ChatEngine extends IChatEngine {
     }
   };
 
-  public invite: IChatEngine["invite"] = async ({
-    inviteeAccount,
-    inviteePublicKey,
-    inviterAccount,
-    message,
-  }) => {
+  public invite: IChatEngine["invite"] = async (invite) => {
     // resolve peer account pubKey X
+
+    const { inviteePublicKey, inviterAccount, inviteeAccount, message } =
+      ZInvite.parse(invite);
 
     // generate a keyPair Y to encrypt the invite with derived DH symKey I.
     const pubkeyY = await this.client.core.crypto.generateKeyPair();
@@ -478,24 +482,24 @@ export class ChatEngine extends IChatEngine {
   };
 
   public sendMessage: IChatEngine["sendMessage"] = async (payload) => {
-    // TODO (post-MVP): preflight validation (is valid message, ...)
+    const messagePayload = ZMessage.parse(payload);
     const keys = this.client.chatKeys.get(this.currentAccount);
-    const iat = payload.timestamp;
-    const messagePayload: InviteKeyClaims = {
+    const iat = messagePayload.timestamp;
+    const messageKeyClaims: InviteKeyClaims = {
       iat,
       exp: jwtExp(iat),
       iss: encodeEd25519Key(keys.identityKeyPub),
-      sub: payload.message,
+      sub: messagePayload.message,
       ksu: this.keyserverUrl,
       aud: composeDidPkh(
-        this.client.chatThreads.get(payload.topic).peerAccount
+        this.client.chatThreads.get(messagePayload.topic).peerAccount
       ),
     };
 
-    await this.sendRequest(payload.topic, "wc_chatMessage", {
+    await this.sendRequest(messagePayload.topic, "wc_chatMessage", {
       messageAuth: await this.generateIdAuth(
         this.currentAccount,
-        messagePayload
+        messageKeyClaims
       ),
     });
 
@@ -512,10 +516,8 @@ export class ChatEngine extends IChatEngine {
     // });
     // await acknowledged();
 
-    console.log("SEND MSG ACK --------");
-
     // Set message in ChatMessages store, keyed by thread topic T.
-    this.setMessage(payload.topic, payload);
+    this.setMessage(messagePayload.topic, messagePayload);
   };
 
   public ping: IChatEngine["ping"] = async ({ topic }) => {
@@ -746,7 +748,6 @@ export class ChatEngine extends IChatEngine {
     payload
   ) => {
     console.log("onInviteResponse:", topic, payload);
-    // TODO (post-MVP): input validation
     if (isJsonRpcResult(payload)) {
       const pubkeyY = this.client.core.crypto.keychain.get(`${topic}-pubkeyY`);
       const decodedPayload = jwt.decode(payload.result.responseAuth, {
@@ -826,19 +827,13 @@ export class ChatEngine extends IChatEngine {
   ) => {
     const { params, id } = payload;
     try {
-      // TODO (post-MVP): input validation
-      console.log("GOT MESSAGE >>", { params });
       const decodedPayload = jwt.decode(params.messageAuth, {
         json: true,
       }) as Record<string, string>;
 
-      console.log("MESSAGE DECODED", decodedPayload);
-
       const cacao = await this.resolveIdentity({
         publicKey: decodedPayload.iss,
       });
-
-      console.log("GOT MESSAGE CACAO", cacao);
 
       const message: ChatClientTypes.Message = {
         topic,
@@ -847,7 +842,6 @@ export class ChatEngine extends IChatEngine {
         timestamp: new Date(decodedPayload.iat).getTime(),
       };
 
-      console.log("MESSAGE IS >>>", message);
       this.setMessage(topic, message);
       await this.sendResult<"wc_chatMessage">(payload.id, topic, true);
       this.client.emit("chat_message", { id, topic, params: message });
