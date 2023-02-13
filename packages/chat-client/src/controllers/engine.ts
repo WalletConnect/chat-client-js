@@ -29,7 +29,6 @@ import {
   JsonRpcTypes,
   ZAccount,
   ZInvite,
-  ZMedia,
   ZMessage,
 } from "../types";
 import { engineEvent } from "../utils/engineUtil";
