@@ -29,7 +29,6 @@
     "format:scripts": "prettier . --write"
   },
   "dependencies": {
-    "@ethersproject/address": "^5.7.0",
     "@noble/ed25519": "^1.7.1",
     "@walletconnect/core": "^2.3.3",
     "@walletconnect/jsonrpc-utils": "^1.0.3",
@@ -41,7 +40,8 @@
     "events": "^3.3.0",
     "jsonwebtoken": "^9.0.0",
     "multiformats": "^11.0.1",
-    "pino": "7.11"
+    "pino": "7.11",
+    "zod": "^3.20.3"
   },
   "devDependencies": {
     "@ethersproject/wallet": "^5.7.0",
