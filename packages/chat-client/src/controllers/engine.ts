@@ -240,6 +240,14 @@ export class ChatEngine extends IChatEngine {
   public register: IChatEngine["register"] = async ({ account, onSign }) => {
     ZAccount.parse(account);
 
+    if (this.client.chatKeys.keys.includes(account)) {
+      const keys = this.client.chatKeys.get(account);
+      if (keys.identityKeyPub) {
+        this.currentAccount = account;
+        return keys.inviteKeyPub;
+      }
+    }
+
     const identityKey = await this.registerIdentity(account, onSign);
     await this.registerInvite(account, false);
 
