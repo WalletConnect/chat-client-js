@@ -91,6 +91,7 @@ export class ChatEngine extends IChatEngine {
       this.client.chatKeys.set(accountId, {
         identityKeyPriv: privKeyHex,
         identityKeyPub: pubKeyHex,
+        accountId,
         inviteKeyPriv: "",
         inviteKeyPub: "",
       });
@@ -754,7 +755,6 @@ export class ChatEngine extends IChatEngine {
     topic,
     payload
   ) => {
-    console.log("onInviteResponse:", topic, payload);
     if (isJsonRpcResult(payload)) {
       const pubkeyY = this.client.core.crypto.keychain.get(`${topic}-pubkeyY`);
       const decodedPayload = jwt.decode(payload.result.responseAuth, {
@@ -767,10 +767,6 @@ export class ChatEngine extends IChatEngine {
         pubkeyY,
         ed25519.utils.bytesToHex(decodeX25519Key(decodedPayload.sub))
       );
-
-      console.log("INVITE_RESPONSE >>>>>>>>>>> ", {
-        topicSymKeyT,
-      });
 
       const symKeyT = this.client.core.crypto.keychain.get(topicSymKeyT);
 

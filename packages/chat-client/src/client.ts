@@ -15,11 +15,11 @@ import {
   CHAT_CONTACTS_CONTEXT,
   CHAT_RECEIVED_INVITES_CONTEXT,
   CHAT_SENT_INVITES_CONTEXT,
+  CHAT_KEYS_CONTEXT,
 } from "./constants";
-import { CHAT_KEYS_CONTEXT } from "./constants/chatKeys";
 
 import { ChatEngine } from "./controllers";
-import { ChatClientTypes, IChatClient } from "./types";
+import { ChatClientTypes, IChatClient, IdentityKeychain } from "./types";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
@@ -64,13 +64,6 @@ export class ChatClient extends IChatClient {
       CHAT_CLIENT_STORAGE_PREFIX,
       (invite: ChatClientTypes.ReceivedInvite) => invite.id
     );
-    this.chatSentInvites = new Store(
-      this.core,
-      this.logger,
-      CHAT_SENT_INVITES_CONTEXT,
-      CHAT_CLIENT_STORAGE_PREFIX,
-      (invite: ChatClientTypes.SentInvite) => invite.id
-    );
     this.chatReceivedInvites = new Store(
       this.core,
       this.logger,
@@ -100,7 +93,8 @@ export class ChatClient extends IChatClient {
       this.core,
       this.logger,
       CHAT_KEYS_CONTEXT,
-      CHAT_CLIENT_STORAGE_PREFIX
+      CHAT_CLIENT_STORAGE_PREFIX,
+      (keys: IdentityKeychain) => keys.accountId
     );
     this.chatContacts = new Store(
       this.core,
