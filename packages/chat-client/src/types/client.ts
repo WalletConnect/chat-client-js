@@ -54,12 +54,6 @@ export const ZThread = z.object({
   peerAccount: ZAccount,
 });
 
-export const ZPendingThread = z.object({
-  topic: z.string().max(80).nullable(),
-  selfAccount: ZAccount,
-  peerAccount: ZAccount,
-});
-
 export const ZContact = z.object({
   accountId: ZAccount,
   publicKey: ZPublicKey,
@@ -91,8 +85,6 @@ export declare namespace ChatClientTypes {
   type Message = z.infer<typeof ZMessage>;
 
   type Thread = z.infer<typeof ZThread>;
-
-  type PendingThread = z.infer<typeof ZPendingThread>;
 
   type Contact = z.infer<typeof ZContact>;
 
