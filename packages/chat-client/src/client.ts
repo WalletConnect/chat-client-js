@@ -7,7 +7,6 @@ import {
 import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
 import {
-  CHAT_CLIENT_CONTEXT,
   CHAT_CLIENT_STORAGE_PREFIX,
   CHAT_MESSAGES_CONTEXT,
   CHAT_THREADS_CONTEXT,
@@ -60,7 +59,7 @@ export class ChatClient extends IChatClient {
     this.chatSentInvites = new Store(
       this.core,
       this.logger,
-      CHAT_CLIENT_CONTEXT,
+      CHAT_SENT_INVITES_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX,
       (invite: ChatClientTypes.ReceivedInvite) => invite.id
     );
