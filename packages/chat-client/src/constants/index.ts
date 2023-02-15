@@ -4,5 +4,6 @@ export * from "./chatContacts";
 export * from "./chatThreads";
 export * from "./chatThreadsPending";
 export * from "./chatMessages";
+export * from "./chatKeys";
 export * from "./history";
 export * from "./engine";

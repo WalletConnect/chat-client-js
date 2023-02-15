@@ -1,1 +1,1 @@
-export const CHAT_KEYS_CONTEXT = "chat_keys";
+export const CHAT_KEYS_CONTEXT = "chat_identity_keys";
