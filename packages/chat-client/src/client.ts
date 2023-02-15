@@ -15,6 +15,7 @@ import {
   CHAT_RECEIVED_INVITES_CONTEXT,
   CHAT_SENT_INVITES_CONTEXT,
   CHAT_KEYS_CONTEXT,
+  KEYSERVER_URL,
 } from "./constants";
 
 import { ChatEngine } from "./controllers";
@@ -22,6 +23,7 @@ import { ChatClientTypes, IChatClient, IdentityKeychain } from "./types";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
+  public readonly keyserverUrl;
 
   public core: ICore;
   public events = new EventEmitter();
@@ -53,6 +55,7 @@ export class ChatClient extends IChatClient {
               level: opts?.logger || "error",
             })
           );
+    this.keyserverUrl = opts?.keyseverUrl ?? KEYSERVER_URL;
 
     this.core = opts?.core || new Core(opts);
     this.logger = generateChildLogger(logger, this.name);

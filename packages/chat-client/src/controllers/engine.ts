@@ -20,7 +20,7 @@ import {
 } from "@walletconnect/utils";
 import axios from "axios";
 import EventEmitter from "events";
-import { ENGINE_RPC_OPTS, KEYSERVER_URL } from "../constants";
+import { ENGINE_RPC_OPTS } from "../constants";
 import * as ed25519 from "@noble/ed25519";
 import {
   ChatClientTypes,
@@ -47,7 +47,7 @@ export class ChatEngine extends IChatEngine {
   private initialized = false;
   private currentAccount = "";
   private events = new EventEmitter();
-  private keyserverUrl = KEYSERVER_URL;
+  private keyserverUrl = this.client.keyserverUrl;
 
   constructor(client: IChatClient) {
     super(client);
@@ -263,7 +263,7 @@ export class ChatEngine extends IChatEngine {
     publicKey,
   }) => {
     console.log("RESOLVEIDENTITY >>", { publicKey });
-    const url = `${KEYSERVER_URL}/identity?publicKey=${
+    const url = `${this.keyserverUrl}/identity?publicKey=${
       publicKey.split(":")[2]
     }`;
 
@@ -277,7 +277,7 @@ export class ChatEngine extends IChatEngine {
   };
 
   public resolveInvite: IChatEngine["resolveInvite"] = async ({ account }) => {
-    const url = `${KEYSERVER_URL}/invite?account=${account}`;
+    const url = `${this.keyserverUrl}/invite?account=${account}`;
 
     console.log("Fetching invite acc", url);
 

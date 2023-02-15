@@ -74,6 +74,7 @@ export const ZChatKey = z.object({
 export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
     core?: ICore;
+    keyseverUrl?: string;
   }
 
   // ---------- Data Types ----------------------------------------------- //
@@ -130,6 +131,7 @@ export interface IdentityKeychain {
 
 export abstract class IChatClient {
   public abstract readonly name: string;
+  public abstract readonly keyserverUrl: string;
 
   public abstract core: ICore;
   public abstract events: EventEmitter;
