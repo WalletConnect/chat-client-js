@@ -27,7 +27,8 @@ export const ZSentInvite = z.object({
   message: z.string().max(200),
   inviterAccount: ZAccount,
   inviteeAccount: ZAccount,
-  status: z.enum(["pending", "rejected"]),
+  responseTopic: z.string().max(80),
+  status: z.enum(["pending", "rejected", "accepted"]),
 });
 
 export const ZReceivedInvite = z.object({
@@ -140,13 +141,9 @@ export abstract class IChatClient {
     number,
     ChatClientTypes.ReceivedInvite
   >;
-  public abstract chatSentInvites: IStore<number, ChatClientTypes.SentInvite>;
+  public abstract chatSentInvites: IStore<string, ChatClientTypes.SentInvite>;
   public abstract chatContacts: IStore<string, ChatClientTypes.Contact>;
   public abstract chatThreads: IStore<string, ChatClientTypes.Thread>;
-  public abstract chatThreadsPending: IStore<
-    string,
-    ChatClientTypes.PendingThread
-  >;
   public abstract chatMessages: IStore<
     string,
     { messages: ChatClientTypes.Message[]; topic: string }

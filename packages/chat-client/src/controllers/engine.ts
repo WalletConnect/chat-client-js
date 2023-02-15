@@ -356,18 +356,13 @@ export class ChatEngine extends IChatEngine {
       }
     );
 
-    this.client.chatSentInvites.set(inviteId, {
+    this.client.chatSentInvites.set(responseTopic, {
       inviteeAccount,
       id: inviteId,
+      responseTopic,
       status: "pending",
       inviterAccount,
       message,
-    });
-
-    await this.client.chatThreadsPending.set(responseTopic, {
-      topic: responseTopic,
-      selfAccount: inviterAccount,
-      peerAccount: inviteeAccount,
     });
 
     return inviteId;
@@ -778,27 +773,25 @@ export class ChatEngine extends IChatEngine {
       // Subscribe to the chat thread topic.
       await this.client.core.relayer.subscribe(chatThreadTopic);
 
-      const { selfAccount, peerAccount } =
-        this.client.chatThreadsPending.get(topic);
+      const { inviteeAccount, inviterAccount } =
+        this.client.chatSentInvites.get(topic);
 
       await this.client.chatThreads.set(chatThreadTopic, {
         topic: chatThreadTopic,
-        selfAccount,
-        peerAccount,
+        selfAccount: inviterAccount,
+        peerAccount: inviteeAccount,
       });
 
       console.log("onInviteResponse > chatThreads.set: ", chatThreadTopic, {
         topic: chatThreadTopic,
-        selfAccount,
-        peerAccount,
+        selfAccount: inviterAccount,
+        peerAccount: inviteeAccount,
       });
 
-      // TODO (post-mvp): decide on a code to use for this.
-      await this.client.chatThreadsPending.delete(topic, {
-        code: -1,
-        message: "Peer accepted invite.",
+      //TODO: Delete after 3
+      await this.client.chatSentInvites.update(topic, {
+        status: "accepted",
       });
-      console.log("onInviteResponse > chatThreadsPending.delete: ", topic);
 
       this.client.emit("chat_joined", {
         id: payload.id,
@@ -816,9 +809,8 @@ export class ChatEngine extends IChatEngine {
   protected onRejectedChatInvite: IChatEngine["onRejectedChatInvite"] = async ({
     topic,
   }) => {
-    await this.client.chatThreadsPending.delete(topic, {
-      code: -1,
-      message: "Invite rejected.",
+    await this.client.chatSentInvites.update(topic, {
+      status: "rejected",
     });
 
     console.log("reject > chatThreadsPending.delete:", topic);
