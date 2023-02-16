@@ -10,7 +10,6 @@ import {
   CHAT_CLIENT_STORAGE_PREFIX,
   CHAT_MESSAGES_CONTEXT,
   CHAT_THREADS_CONTEXT,
-  CHAT_THREADS_PENDING_CONTEXT,
   CHAT_CONTACTS_CONTEXT,
   CHAT_RECEIVED_INVITES_CONTEXT,
   CHAT_SENT_INVITES_CONTEXT,
@@ -31,7 +30,6 @@ export class ChatClient extends IChatClient {
   public chatSentInvites: IChatClient["chatSentInvites"];
   public chatReceivedInvites: IChatClient["chatReceivedInvites"];
   public chatThreads: IChatClient["chatThreads"];
-  public chatThreadsPending: IChatClient["chatThreadsPending"];
   public chatMessages: IChatClient["chatMessages"];
   public chatContacts: IChatClient["chatContacts"];
   public chatKeys: IChatClient["chatKeys"];
@@ -64,7 +62,7 @@ export class ChatClient extends IChatClient {
       this.logger,
       CHAT_SENT_INVITES_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX,
-      (invite: ChatClientTypes.ReceivedInvite) => invite.id
+      (invite: ChatClientTypes.SentInvite) => invite.responseTopic
     );
     this.chatReceivedInvites = new Store(
       this.core,
@@ -77,12 +75,6 @@ export class ChatClient extends IChatClient {
       this.core,
       this.logger,
       CHAT_THREADS_CONTEXT,
-      CHAT_CLIENT_STORAGE_PREFIX
-    );
-    this.chatThreadsPending = new Store(
-      this.core,
-      this.logger,
-      CHAT_THREADS_PENDING_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX
     );
     this.chatMessages = new Store(
@@ -254,7 +246,6 @@ export class ChatClient extends IChatClient {
       await this.chatSentInvites.init();
       await this.chatReceivedInvites.init();
       await this.chatThreads.init();
-      await this.chatThreadsPending.init();
       await this.chatMessages.init();
       await this.chatKeys.init();
       await this.chatContacts.init();
