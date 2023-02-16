@@ -788,7 +788,7 @@ export class ChatEngine extends IChatEngine {
         peerAccount: inviteeAccount,
       });
 
-      //TODO: Delete after 3
+      //TODO: Delete after 3 settled invites
       await this.client.chatSentInvites.update(topic, {
         status: "accepted",
       });
