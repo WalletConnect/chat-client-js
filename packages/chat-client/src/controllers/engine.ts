@@ -446,10 +446,8 @@ export class ChatEngine extends IChatEngine {
       peerAccount: invite.inviterAccount,
     });
 
-    // TODO (post-mvp): decide on a code to use for this.
-    await this.client.chatReceivedInvites.delete(id, {
-      code: -1,
-      message: "Invite accepted.",
+    await this.client.chatReceivedInvites.update(id, {
+      status: "approved",
     });
 
     console.log("accept > chatInvites.delete:", id);
@@ -476,9 +474,8 @@ export class ChatEngine extends IChatEngine {
 
     await this.sendError(id, responseTopic, getSdkError("USER_REJECTED"));
 
-    await this.client.chatReceivedInvites.delete(id, {
-      code: -1,
-      message: "Invite rejected.",
+    await this.client.chatReceivedInvites.update(id, {
+      status: "rejected",
     });
 
     console.log("reject > chatInvites.delete:", id);
@@ -717,6 +714,7 @@ export class ChatEngine extends IChatEngine {
       const invitePayload: ChatClientTypes.ReceivedInvite = {
         id,
         inviteeAccount: decodedPayload.aud.split(":").slice(2).join(":"),
+        status: "pending",
         message: decodedPayload.sub,
         inviterAccount: (
           await this.resolveIdentity({
@@ -790,30 +788,40 @@ export class ChatEngine extends IChatEngine {
 
       //TODO: Delete after 3 settled invites
       await this.client.chatSentInvites.update(topic, {
-        status: "accepted",
+        status: "approved",
       });
 
-      this.client.emit("chat_joined", {
+      this.client.emit("chat_invite_accepted", {
         id: payload.id,
-        topic: chatThreadTopic,
+        topic: topic,
+        params: {
+          invite: this.client.chatSentInvites.get(topic),
+          topic,
+        },
       });
     } else if (isJsonRpcError(payload)) {
       this.client.logger.error(payload.error);
       if (payload.error.message === getSdkError("USER_REJECTED").message) {
-        console.log("rejected invite... deleting", payload);
-        this.onRejectedChatInvite({ topic });
+        this.onRejectedChatInvite({ topic, id: payload.id });
       }
     }
   };
 
   protected onRejectedChatInvite: IChatEngine["onRejectedChatInvite"] = async ({
+    id,
     topic,
   }) => {
     await this.client.chatSentInvites.update(topic, {
       status: "rejected",
     });
 
-    console.log("reject > chatThreadsPending.delete:", topic);
+    this.client.emit("chat_invite_rejected", {
+      id: id,
+      topic: topic,
+      params: {
+        invite: this.client.chatSentInvites.get(topic),
+      },
+    });
   };
 
   protected onIncomingMessage: IChatEngine["onIncomingMessage"] = async (
