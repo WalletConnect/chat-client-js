@@ -138,9 +138,9 @@ describe("ChatClient", () => {
       peerReceivedInvite = true;
     });
 
-    client.on("chat_joined", async (args) => {
+    client.on("chat_invite_accepted", async (args) => {
       const { topic } = args;
-      console.log("chat_joined:", args);
+      console.log("chat_invite_accepted:", args);
       expect(topic).toBeDefined();
       peerJoinedChat = true;
     });
@@ -189,9 +189,9 @@ describe("ChatClient", () => {
       peerReceivedInvite = true;
     });
 
-    client.on("chat_joined", async (args) => {
+    client.on("chat_invite_accepted", async (args) => {
       const { topic } = args;
-      console.log("chat_joined:", args);
+      console.log("chat_invite_accepted:", args);
       expect(topic).toBeDefined();
       peerJoinedChat = true;
     });
@@ -296,7 +296,7 @@ describe("ChatClient", () => {
         peerReceivedInvite = true;
       });
 
-      client.on("chat_joined", async (args) => {
+      client.on("chat_invite_accepted", async (args) => {
         const { topic } = args;
         console.log("chat_joined:", args);
         expect(topic).toBeDefined();
@@ -335,6 +335,7 @@ describe("ChatClient", () => {
       const peerAccount = account.replace("81F", "81D");
       const id = 1666697147892830;
       const mockInvite: ChatClientTypes.ReceivedInvite = {
+        status: "pending",
         message: "hey let's chat",
         inviterAccount: peerAccount,
         inviteeAccount: account,
