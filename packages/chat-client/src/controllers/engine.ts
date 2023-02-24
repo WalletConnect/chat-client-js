@@ -446,10 +446,8 @@ export class ChatEngine extends IChatEngine {
       peerAccount: invite.inviterAccount,
     });
 
-    // TODO (post-mvp): decide on a code to use for this.
-    await this.client.chatReceivedInvites.delete(id, {
-      code: -1,
-      message: "Invite accepted.",
+    await this.client.chatReceivedInvites.update(id, {
+      status: "approved",
     });
 
     console.log("accept > chatInvites.delete:", id);
@@ -476,9 +474,8 @@ export class ChatEngine extends IChatEngine {
 
     await this.sendError(id, responseTopic, getSdkError("USER_REJECTED"));
 
-    await this.client.chatReceivedInvites.delete(id, {
-      code: -1,
-      message: "Invite rejected.",
+    await this.client.chatReceivedInvites.update(id, {
+      status: "rejected",
     });
 
     console.log("reject > chatInvites.delete:", id);
@@ -717,6 +714,7 @@ export class ChatEngine extends IChatEngine {
       const invitePayload: ChatClientTypes.ReceivedInvite = {
         id,
         inviteeAccount: decodedPayload.aud.split(":").slice(2).join(":"),
+        status: "pending",
         message: decodedPayload.sub,
         inviterAccount: (
           await this.resolveIdentity({

@@ -10,6 +10,8 @@ export const ZAccount = z.string().regex(/.*:.*:.*/, {
 
 const ZPublicKey = z.string().max(100);
 
+const ZInviteStatus = z.enum(["pending", "rejected", "approved"]);
+
 export const ZInvite = z.object({
   message: z.string().max(200),
   inviterAccount: ZAccount,
@@ -28,12 +30,13 @@ export const ZSentInvite = z.object({
   inviterAccount: ZAccount,
   inviteeAccount: ZAccount,
   responseTopic: z.string().max(80),
-  status: z.enum(["pending", "rejected", "approved"]),
+  status: ZInviteStatus,
 });
 
 export const ZReceivedInvite = z.object({
   id: z.number(),
   message: z.string().max(200),
+  status: ZInviteStatus,
   inviterAccount: ZAccount,
   inviteeAccount: ZAccount,
   inviterPublicKey: ZPublicKey,
