@@ -793,7 +793,7 @@ export class ChatEngine extends IChatEngine {
         status: "approved",
       });
 
-      this.client.emit("chat_invite_approved", {
+      this.client.emit("chat_invite_accepted", {
         id: payload.id,
         topic: topic,
         params: {

@@ -94,7 +94,7 @@ export declare namespace ChatClientTypes {
 
   type Event =
     | "chat_invite"
-    | "chat_invite_approved"
+    | "chat_invite_accepted"
     | "chat_invite_rejected"
     | "chat_message"
     | "chat_ping"
@@ -111,7 +111,7 @@ export declare namespace ChatClientTypes {
     chat_message: BaseEventArgs<Message>;
     chat_ping: Omit<BaseEventArgs, "params">;
     chat_left: Omit<BaseEventArgs, "params">;
-    chat_invite_approved: BaseEventArgs<{ invite: SentInvite; topic: string }>;
+    chat_invite_accepted: BaseEventArgs<{ invite: SentInvite; topic: string }>;
     chat_invite_rejected: BaseEventArgs<{ invite: SentInvite }>;
   }
 }
