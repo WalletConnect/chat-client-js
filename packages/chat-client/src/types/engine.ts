@@ -106,6 +106,7 @@ export abstract class IChatEngine {
   ): Promise<void>;
 
   protected abstract onRejectedChatInvite(params: {
+    id: number;
     topic: string;
   }): Promise<void>;
 

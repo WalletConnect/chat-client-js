@@ -28,7 +28,7 @@ export const ZSentInvite = z.object({
   inviterAccount: ZAccount,
   inviteeAccount: ZAccount,
   responseTopic: z.string().max(80),
-  status: z.enum(["pending", "rejected", "accepted"]),
+  status: z.enum(["pending", "rejected", "approved"]),
 });
 
 export const ZReceivedInvite = z.object({
@@ -94,7 +94,8 @@ export declare namespace ChatClientTypes {
 
   type Event =
     | "chat_invite"
-    | "chat_joined"
+    | "chat_invite_approved"
+    | "chat_invite_rejected"
     | "chat_message"
     | "chat_ping"
     | "chat_left";
@@ -107,10 +108,11 @@ export declare namespace ChatClientTypes {
 
   interface EventArguments {
     chat_invite: BaseEventArgs<Invite>;
-    chat_joined: Omit<BaseEventArgs, "params">;
     chat_message: BaseEventArgs<Message>;
     chat_ping: Omit<BaseEventArgs, "params">;
     chat_left: Omit<BaseEventArgs, "params">;
+    chat_invite_approved: BaseEventArgs<{ invite: SentInvite; topic: string }>;
+    chat_invite_rejected: BaseEventArgs<{ invite: SentInvite }>;
   }
 }
 
