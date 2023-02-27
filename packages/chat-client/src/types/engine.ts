@@ -83,16 +83,19 @@ export abstract class IChatEngine {
   // ---------- Protected Relay Event Methods ----------------------------------- //
 
   protected abstract onRelayEventRequest(
-    event: EngineTypes.EventCallback<JsonRpcRequest>
+    event: EngineTypes.EventCallback<JsonRpcRequest>,
+    publishedAt: number
   ): void;
 
   protected abstract onRelayEventResponse(
-    event: EngineTypes.EventCallback<JsonRpcResponse>
+    event: EngineTypes.EventCallback<JsonRpcResponse>,
+    publishedAt: number
   ): Promise<void>;
 
   protected abstract onIncomingInvite(
     topic: string,
-    payload: JsonRpcRequest<{ inviteAuth: string }>
+    payload: JsonRpcRequest<{ inviteAuth: string }>,
+    publishedAt: number
   ): Promise<void>;
 
   protected abstract onInviteResponse(
