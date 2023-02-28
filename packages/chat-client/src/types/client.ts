@@ -72,7 +72,7 @@ export const ZChatKey = z.object({
 export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
     core?: ICore;
-    keyseverUrl?: string;
+    keyserverUrl?: string;
   }
 
   // ---------- Data Types ----------------------------------------------- //
