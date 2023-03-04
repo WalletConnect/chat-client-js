@@ -53,7 +53,7 @@ export class ChatClient extends IChatClient {
               level: opts?.logger || "error",
             })
           );
-    this.keyserverUrl = opts?.keyseverUrl ?? KEYSERVER_URL;
+    this.keyserverUrl = opts?.keyserverUrl ?? KEYSERVER_URL;
 
     this.core = opts?.core || new Core(opts);
     this.logger = generateChildLogger(logger, this.name);
