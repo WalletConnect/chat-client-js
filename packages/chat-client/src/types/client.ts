@@ -37,6 +37,7 @@ export const ZReceivedInvite = z.object({
   id: z.number(),
   message: z.string().max(200),
   status: ZInviteStatus,
+  timestamp: z.number(),
   inviterAccount: ZAccount,
   inviteeAccount: ZAccount,
   inviterPublicKey: ZPublicKey,

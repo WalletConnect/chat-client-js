@@ -333,11 +333,11 @@ describe("ChatClient", () => {
       const mockInviteId = 1666697147892830;
       const account = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
       const peerAccount = account.replace("81F", "81D");
-      const id = 1666697147892830;
       const mockInvite: ChatClientTypes.ReceivedInvite = {
         status: "pending",
         message: "hey let's chat",
         inviterAccount: peerAccount,
+        timestamp: Date.now(),
         inviteeAccount: account,
         id: mockInviteId,
         inviterPublicKey:

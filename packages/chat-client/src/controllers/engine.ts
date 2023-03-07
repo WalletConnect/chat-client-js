@@ -629,7 +629,7 @@ export class ChatEngine extends IChatEngine {
     this.client.core.relayer.on(
       RELAYER_EVENTS.message,
       async (event: RelayerTypes.MessageEvent) => {
-        const { topic, message } = event;
+        const { topic, message, publishedAt } = event;
         if (!this.client.chatKeys.keys.includes(this.currentAccount)) {
           return;
         }
@@ -640,24 +640,25 @@ export class ChatEngine extends IChatEngine {
         });
         if (isJsonRpcRequest(payload)) {
           this.client.core.history.set(topic, payload);
-          this.onRelayEventRequest({ topic, payload });
+          this.onRelayEventRequest({ topic, payload }, publishedAt);
         } else if (isJsonRpcResponse(payload)) {
           await this.client.core.history.resolve(payload);
-          this.onRelayEventResponse({ topic, payload });
+          this.onRelayEventResponse({ topic, payload }, publishedAt);
         }
       }
     );
   }
 
   protected onRelayEventRequest: IChatEngine["onRelayEventRequest"] = (
-    event
+    event,
+    publishedAt
   ) => {
     const { topic, payload } = event;
     const reqMethod = payload.method as JsonRpcTypes.WcMethod;
 
     switch (reqMethod) {
       case "wc_chatInvite":
-        return this.onIncomingInvite(topic, payload);
+        return this.onIncomingInvite(topic, payload, publishedAt);
       case "wc_chatMessage":
         return this.onIncomingMessage(topic, payload);
       case "wc_chatPing":
@@ -696,7 +697,8 @@ export class ChatEngine extends IChatEngine {
   // TODO (post-MVP): Peer rejects invite
   protected onIncomingInvite: IChatEngine["onIncomingInvite"] = async (
     inviteTopic,
-    payload
+    payload,
+    publishedAt
   ) => {
     try {
       const { id, params } = payload;
@@ -715,6 +717,7 @@ export class ChatEngine extends IChatEngine {
         id,
         inviteeAccount: decodedPayload.aud.split(":").slice(2).join(":"),
         status: "pending",
+        timestamp: publishedAt,
         message: decodedPayload.sub,
         inviterAccount: (
           await this.resolveIdentity({
