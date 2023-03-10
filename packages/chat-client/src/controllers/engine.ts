@@ -14,6 +14,8 @@ import {
   createDelayedPromise,
   formatMessage,
   generateRandomBytes32,
+  getRelayProtocolApi,
+  getRelayProtocolName,
   getSdkError,
   hashKey,
   TYPE_1,
@@ -496,25 +498,29 @@ export class ChatEngine extends IChatEngine {
       ),
     };
 
-    await this.sendRequest(messagePayload.topic, "wc_chatMessage", {
+    const jsonRpcPayload = formatJsonRpcRequest("wc_chatMessage", {
       messageAuth: await this.generateIdAuth(
         this.currentAccount,
         messageKeyClaims
       ),
     });
 
-    console.log("----- SEND MSG");
+    const encodedMessage = await this.client.core.crypto.encode(
+      messagePayload.topic,
+      jsonRpcPayload
+    );
 
-    // const {
-    //   done: acknowledged,
-    //   resolve,
-    //   reject,
-    // } = createDelayedPromise<void>();
-    // this.events.once(engineEvent("chat_message", id), ({ error }) => {
-    //   if (error) reject(error);
-    //   else resolve();
-    // });
-    // await acknowledged();
+    await this.client.core.relayer.provider.request({
+      method: getRelayProtocolApi(getRelayProtocolName().protocol).publish,
+      params: {
+        ...ENGINE_RPC_OPTS["wc_chatMessage"].req,
+        message: encodedMessage,
+        topic: messagePayload.topic,
+      },
+    });
+    this.client.core.history.set(messagePayload.topic, jsonRpcPayload);
+
+    console.log("----- SEND MSG");
 
     // Set message in ChatMessages store, keyed by thread topic T.
     this.setMessage(messagePayload.topic, messagePayload);
