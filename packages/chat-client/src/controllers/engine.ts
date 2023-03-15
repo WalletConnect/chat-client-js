@@ -79,7 +79,6 @@ export class ChatEngine extends IChatEngine {
     return pubKeyHex;
   };
 
-  // type invite has to be called after type identity
   private generateIdentityKey = async () => {
     const privateKey = ed25519.utils.randomPrivateKey();
     const publicKey = await ed25519.getPublicKey(privateKey);
