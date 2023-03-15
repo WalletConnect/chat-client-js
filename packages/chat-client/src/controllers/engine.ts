@@ -70,37 +70,25 @@ export class ChatEngine extends IChatEngine {
     }
   };
 
-  // type invite has to be called after type identity
-  private generateAndStoreKeyserverKeys = async (
-    accountId: string,
-    type: "invite" | "identity"
-  ) => {
-    if (type === "invite") {
-      const pubKeyHex = await this.client.core.crypto.generateKeyPair();
-      const privKeyHex = this.client.core.crypto.keychain.get(pubKeyHex);
-      this.client.chatKeys.update(accountId, {
-        inviteKeyPriv: privKeyHex,
-        inviteKeyPub: pubKeyHex,
-      });
-      return pubKeyHex;
-    } else if (type === "identity") {
-      const privateKey = ed25519.utils.randomPrivateKey();
-      const publicKey = await ed25519.getPublicKey(privateKey);
+  // Needs to be called after identity key has been created.
+  private generateAndStoreInviteKey = async (accountId: string) => {
+    const pubKeyHex = await this.client.core.crypto.generateKeyPair();
+    const privKeyHex = this.client.core.crypto.keychain.get(pubKeyHex);
+    this.client.chatKeys.update(accountId, {
+      inviteKeyPriv: privKeyHex,
+      inviteKeyPub: pubKeyHex,
+    });
+    return pubKeyHex;
+  };
 
-      const pubKeyHex = ed25519.utils.bytesToHex(publicKey).toLowerCase();
-      const privKeyHex = ed25519.utils.bytesToHex(privateKey).toLowerCase();
-      this.client.core.crypto.keychain.set(pubKeyHex, privKeyHex);
-      this.client.chatKeys.set(accountId, {
-        identityKeyPriv: privKeyHex,
-        identityKeyPub: pubKeyHex,
-        accountId,
-        inviteKeyPriv: "",
-        inviteKeyPub: "",
-      });
-      return pubKeyHex;
-    }
+  private generateIdentityKey = async () => {
+    const privateKey = ed25519.utils.randomPrivateKey();
+    const publicKey = await ed25519.getPublicKey(privateKey);
 
-    throw new Error("Invalid type provided");
+    const pubKeyHex = ed25519.utils.bytesToHex(publicKey).toLowerCase();
+    const privKeyHex = ed25519.utils.bytesToHex(privateKey).toLowerCase();
+    this.client.core.crypto.keychain.set(pubKeyHex, privKeyHex);
+    return [pubKeyHex, privKeyHex];
   };
 
   private generateIdAuth = (accountId: string, payload: InviteKeyClaims) => {
@@ -118,10 +106,7 @@ export class ChatEngine extends IChatEngine {
       const storedKeyPair = this.client.chatKeys.get(accountId);
       return storedKeyPair.identityKeyPub;
     } catch {
-      const pubKeyHex = await this.generateAndStoreKeyserverKeys(
-        accountId,
-        "identity"
-      );
+      const [pubKeyHex, privKeyHex] = await this.generateIdentityKey();
       const didKey = encodeEd25519Key(pubKeyHex);
 
       const cacao: Cacao = {
@@ -147,6 +132,16 @@ export class ChatEngine extends IChatEngine {
       const cacaoMessage = formatMessage(cacao.p, composeDidPkh(accountId));
 
       const signature = await onSign(cacaoMessage);
+
+      // Storing keys after signature creation to prevent having false statement
+      // Eg, onSign failing / never resolving but having identity keys stored.
+      this.client.chatKeys.set(accountId, {
+        identityKeyPriv: privKeyHex,
+        identityKeyPub: pubKeyHex,
+        accountId,
+        inviteKeyPriv: "",
+        inviteKeyPub: "",
+      });
 
       const url = `${this.keyserverUrl}/identity`;
 
@@ -174,10 +169,7 @@ export class ChatEngine extends IChatEngine {
 
       throw new Error("Invite key not registered");
     } catch {
-      const pubKeyHex = await this.generateAndStoreKeyserverKeys(
-        accountId,
-        "invite"
-      );
+      const pubKeyHex = await this.generateAndStoreInviteKey(accountId);
 
       const { identityKeyPub } = this.client.chatKeys.get(accountId);
 
@@ -243,14 +235,6 @@ export class ChatEngine extends IChatEngine {
   public register: IChatEngine["register"] = async ({ account, onSign }) => {
     ZAccount.parse(account);
 
-    if (this.client.chatKeys.keys.includes(account)) {
-      const keys = this.client.chatKeys.get(account);
-      if (keys.identityKeyPub) {
-        this.currentAccount = account;
-        return keys.inviteKeyPub;
-      }
-    }
-
     const identityKey = await this.registerIdentity(account, onSign);
     await this.registerInvite(account, false);
 
@@ -264,7 +248,6 @@ export class ChatEngine extends IChatEngine {
   public resolveIdentity: IChatEngine["resolveIdentity"] = async ({
     publicKey,
   }) => {
-    console.log("RESOLVEIDENTITY >>", { publicKey });
     const url = `${this.keyserverUrl}/identity?publicKey=${
       publicKey.split(":")[2]
     }`;
@@ -274,14 +257,12 @@ export class ChatEngine extends IChatEngine {
       return data.value.cacao;
     } catch (e: any) {
       console.error(e.toJSON());
-      throw new Error("Failed");
+      throw new Error("Failed to resolve identity key");
     }
   };
 
   public resolveInvite: IChatEngine["resolveInvite"] = async ({ account }) => {
     const url = `${this.keyserverUrl}/invite?account=${account}`;
-
-    console.log("Fetching invite acc", url);
 
     try {
       const { data } = await axios.get<{ value: { inviteKey: string } }>(url);

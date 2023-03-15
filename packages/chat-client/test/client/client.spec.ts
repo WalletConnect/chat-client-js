@@ -406,4 +406,28 @@ describe("ChatClient", () => {
       expect(client.getMessages({ topic })).toEqual(mockChatMessages);
     });
   });
+
+  describe("Multi account storage", () => {
+    it("Can register different accounts", async () => {
+      const walletSelf1 = Wallet.createRandom();
+      const walletSelf2 = Wallet.createRandom();
+
+      const identityKey1 = await client.register({
+        account: composeChainAddress(walletSelf1.address),
+        onSign: (message) => walletSelf1.signMessage(message),
+      });
+
+      const identityKey2 = await client.register({
+        account: composeChainAddress(walletSelf2.address),
+        onSign: (message) => walletSelf2.signMessage(message),
+      });
+
+      expect(identityKey1).toBeTruthy();
+      expect(identityKey2).toBeTruthy();
+
+      console.table({ identityKey1, identityKey2 });
+
+      expect(identityKey1).to.not.eq(identityKey2);
+    });
+  });
 });
