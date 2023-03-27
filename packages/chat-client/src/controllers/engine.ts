@@ -783,11 +783,8 @@ export class ChatEngine extends IChatEngine {
 
       this.client.emit("chat_invite_accepted", {
         id: payload.id,
-        topic: topic,
-        params: {
-          invite: this.client.chatSentInvites.get(topic),
-          topic: chatThreadTopic,
-        },
+        topic,
+        invite: this.client.chatSentInvites.get(topic),
       });
     } else if (isJsonRpcError(payload)) {
       this.client.logger.error(payload.error);
@@ -806,11 +803,9 @@ export class ChatEngine extends IChatEngine {
     });
 
     this.client.emit("chat_invite_rejected", {
-      id: id,
-      topic: topic,
-      params: {
-        invite: this.client.chatSentInvites.get(topic),
-      },
+      id,
+      topic,
+      invite: this.client.chatSentInvites.get(topic),
     });
   };
 

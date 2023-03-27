@@ -115,8 +115,8 @@ export declare namespace ChatClientTypes {
     chat_message: BaseEventArgs<Message>;
     chat_ping: Omit<BaseEventArgs, "params">;
     chat_left: Omit<BaseEventArgs, "params">;
-    chat_invite_accepted: BaseEventArgs<{ invite: SentInvite; topic: string }>;
-    chat_invite_rejected: BaseEventArgs<{ invite: SentInvite }>;
+    chat_invite_accepted: { invite: SentInvite; topic: string; id: number };
+    chat_invite_rejected: { invite: SentInvite; id: number; topic: string };
   }
 }
 
