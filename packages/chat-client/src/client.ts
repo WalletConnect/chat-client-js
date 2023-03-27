@@ -185,6 +185,11 @@ export class ChatClient extends IChatClient {
   };
 
   public getThreads: IChatClient["getThreads"] = (params) => {
+    console.log(
+      "chatClient >> getThreads, threads: ",
+      this.chatThreads.getAll()
+    );
+
     try {
       return this.chatThreads
         .getAll(
@@ -281,9 +286,6 @@ export class ChatClient extends IChatClient {
         logger: this.logger,
       });
       await this.core.start();
-      await this.chatSentInvites.init();
-      await this.chatReceivedInvites.init();
-      await this.chatThreads.init();
       await this.chatMessages.init();
       await this.chatKeys.init();
       await this.chatContacts.init();

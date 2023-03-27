@@ -360,7 +360,7 @@ export class ChatEngine extends IChatEngine {
       }
     );
 
-    this.client.chatSentInvites.set(responseTopic, {
+    await this.client.chatSentInvites.set(responseTopic, {
       inviteeAccount,
       id: inviteId,
       responseTopic,
