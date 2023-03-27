@@ -19,12 +19,14 @@ import {
 
 import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient, IdentityKeychain } from "./types";
+import { ISyncClient, SyncClient, SyncStore } from "@walletconnect/sync-client";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
   public readonly keyserverUrl;
 
   public core: ICore;
+  public syncClient: ISyncClient | undefined;
   public events = new EventEmitter();
   public logger: IChatClient["logger"];
   public chatSentInvites: IChatClient["chatSentInvites"];
@@ -237,11 +239,47 @@ export class ChatClient extends IChatClient {
     return this.events.removeListener(name, listener);
   };
 
+  public initSyncStores: IChatClient["initSyncStores"] = async ({
+    account,
+    signature,
+  }) => {
+    if (!this.syncClient) return;
+
+    this.chatSentInvites = new SyncStore(
+      CHAT_SENT_INVITES_CONTEXT,
+      this.syncClient,
+      account,
+      signature
+    );
+
+    this.chatReceivedInvites = new SyncStore(
+      CHAT_RECEIVED_INVITES_CONTEXT,
+      this.syncClient,
+      account,
+      signature
+    );
+
+    this.chatThreads = new SyncStore(
+      CHAT_THREADS_CONTEXT,
+      this.syncClient,
+      account,
+      signature
+    );
+
+    await this.chatSentInvites.init();
+    await this.chatReceivedInvites.init();
+    await this.chatThreads.init();
+  };
+
   // ---------- Private ----------------------------------------------- //
 
   private async initialize() {
     this.logger.trace(`Initialized`);
     try {
+      this.syncClient = await SyncClient.init({
+        core: this.core,
+        logger: this.logger,
+      });
       await this.core.start();
       await this.chatSentInvites.init();
       await this.chatReceivedInvites.init();

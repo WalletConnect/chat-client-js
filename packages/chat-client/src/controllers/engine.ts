@@ -242,6 +242,22 @@ export class ChatEngine extends IChatEngine {
 
     await this.subscribeToSelfInviteTopic();
 
+    if (this.client.syncClient) {
+      try {
+        const { signature } = this.client.syncClient.signatures.get(account);
+        await this.client.initSyncStores({ account, signature });
+      } catch {
+        const syncMessage = await this.client.syncClient.getMessage({
+          account,
+        });
+        const signedSyncMessage = await onSign(syncMessage);
+        await this.client.syncClient.register({
+          account,
+          signature: signedSyncMessage,
+        });
+      }
+    }
+
     return identityKey;
   };
 
@@ -325,6 +341,11 @@ export class ChatEngine extends IChatEngine {
 
     await this.client.core.relayer.subscribe(responseTopic);
 
+    console.log(
+      "RECEIVER PUBLIC KEY (invite) >>>>>>>>>>>>>>>>>>>>>>>>>> ",
+      pubkeyX
+    );
+
     // TODO: needed? persist invite
     // await this.client.chatInvites.set(inviteId, completeInvite);
     // send invite encrypted with type 1 envelope to the invite topic including publicKey Y.
@@ -352,7 +373,7 @@ export class ChatEngine extends IChatEngine {
   };
 
   public accept: IChatEngine["accept"] = async ({ id }) => {
-    const invite = this.client.chatReceivedInvites.get(id);
+    const invite = this.client.chatReceivedInvites.get(id.toString());
 
     if (!this.currentAccount) {
       throw new Error("No account registered");
@@ -429,7 +450,7 @@ export class ChatEngine extends IChatEngine {
       peerAccount: invite.inviterAccount,
     });
 
-    await this.client.chatReceivedInvites.update(id, {
+    await this.client.chatReceivedInvites.update(id.toString(), {
       status: "approved",
     });
 
@@ -443,7 +464,7 @@ export class ChatEngine extends IChatEngine {
       throw new Error("No account registered");
     }
 
-    const invite = this.client.chatReceivedInvites.get(id);
+    const invite = this.client.chatReceivedInvites.get(id.toString());
     const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
 
     const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
@@ -457,7 +478,7 @@ export class ChatEngine extends IChatEngine {
 
     await this.sendError(id, responseTopic, getSdkError("USER_REJECTED"));
 
-    await this.client.chatReceivedInvites.update(id, {
+    await this.client.chatReceivedInvites.update(id.toString(), {
       status: "rejected",
     });
 
@@ -622,9 +643,15 @@ export class ChatEngine extends IChatEngine {
         }
         const selfKeys = this.client.chatKeys.get(this.currentAccount);
 
+        console.log(
+          "RECEIVER PUBLIC KEY (registerRelayerEvents) >>>>>>>>>>>>>>>>>>>>>>>>>> ",
+          selfKeys.inviteKeyPub
+        );
+
         const payload = await this.client.core.crypto.decode(topic, message, {
           receiverPublicKey: selfKeys.inviteKeyPub,
         });
+
         if (isJsonRpcRequest(payload)) {
           this.client.core.history.set(topic, payload);
           this.onRelayEventRequest({ topic, payload }, publishedAt);
@@ -720,7 +747,10 @@ export class ChatEngine extends IChatEngine {
         ),
       };
 
-      await this.client.chatReceivedInvites.set(id, { ...invitePayload, id });
+      await this.client.chatReceivedInvites.set(id.toString(), {
+        ...invitePayload,
+        id,
+      });
 
       this.client.emit("chat_invite", {
         id,
