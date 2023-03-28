@@ -285,6 +285,18 @@ export class ChatClient extends IChatClient {
         core: this.core,
         logger: this.logger,
       });
+
+      // Use active account to init stores
+      if (this.syncClient && this.syncClient.signatures.length > 0) {
+        const signatureEntry = this.syncClient.signatures.getAll({
+          active: true,
+        })[0];
+        await this.initSyncStores({
+          account: signatureEntry.account,
+          signature: signatureEntry.signature,
+        });
+      }
+
       await this.core.start();
       await this.chatMessages.init();
       await this.chatKeys.init();
