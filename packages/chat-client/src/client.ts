@@ -257,13 +257,6 @@ export class ChatClient extends IChatClient {
       signature
     );
 
-    this.chatReceivedInvites = new SyncStore(
-      CHAT_RECEIVED_INVITES_CONTEXT,
-      this.syncClient,
-      account,
-      signature
-    );
-
     this.chatThreads = new SyncStore(
       CHAT_THREADS_CONTEXT,
       this.syncClient,
@@ -299,6 +292,7 @@ export class ChatClient extends IChatClient {
 
       await this.core.start();
       await this.chatMessages.init();
+      await this.chatReceivedInvites.init();
       await this.chatKeys.init();
       await this.chatContacts.init();
       await this.engine.init();
