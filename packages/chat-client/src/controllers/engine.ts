@@ -341,11 +341,6 @@ export class ChatEngine extends IChatEngine {
 
     await this.client.core.relayer.subscribe(responseTopic);
 
-    console.log(
-      "RECEIVER PUBLIC KEY (invite) >>>>>>>>>>>>>>>>>>>>>>>>>> ",
-      pubkeyX
-    );
-
     // TODO: needed? persist invite
     // await this.client.chatInvites.set(inviteId, completeInvite);
     // send invite encrypted with type 1 envelope to the invite topic including publicKey Y.
@@ -642,11 +637,6 @@ export class ChatEngine extends IChatEngine {
           return;
         }
         const selfKeys = this.client.chatKeys.get(this.currentAccount);
-
-        console.log(
-          "RECEIVER PUBLIC KEY (registerRelayerEvents) >>>>>>>>>>>>>>>>>>>>>>>>>> ",
-          selfKeys.inviteKeyPub
-        );
 
         const payload = await this.client.core.crypto.decode(topic, message, {
           receiverPublicKey: selfKeys.inviteKeyPub,

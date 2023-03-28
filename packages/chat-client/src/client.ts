@@ -185,11 +185,6 @@ export class ChatClient extends IChatClient {
   };
 
   public getThreads: IChatClient["getThreads"] = (params) => {
-    console.log(
-      "chatClient >> getThreads, threads: ",
-      this.chatThreads.getAll()
-    );
-
     try {
       return this.chatThreads
         .getAll(
