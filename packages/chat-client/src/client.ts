@@ -260,7 +260,6 @@ export class ChatClient extends IChatClient {
     );
 
     await this.chatSentInvites.init();
-    await this.chatReceivedInvites.init();
     await this.chatThreads.init();
   };
 

@@ -243,15 +243,19 @@ export class ChatEngine extends IChatEngine {
     await this.subscribeToSelfInviteTopic();
 
     if (this.client.syncClient) {
-      try {
+      if (this.client.syncClient.signatures.keys.includes(account)) {
         const { signature } = this.client.syncClient.signatures.get(account);
         await this.client.initSyncStores({ account, signature });
-      } catch {
+      } else {
         const syncMessage = await this.client.syncClient.getMessage({
           account,
         });
         const signedSyncMessage = await onSign(syncMessage);
         await this.client.syncClient.register({
+          account,
+          signature: signedSyncMessage,
+        });
+        await this.client.initSyncStores({
           account,
           signature: signedSyncMessage,
         });
