@@ -345,10 +345,12 @@ describe("ChatClient", () => {
         inviteePublicKey:
           "511dc223dcf4b4a0148009785fe5c247d4e9ece7e8bd83db3082d6f1cdc07e16",
       };
-      await client.chatReceivedInvites.set(mockInviteId, mockInvite);
+      await client.chatReceivedInvites.set(mockInviteId.toString(), mockInvite);
 
       expect(client.getReceivedInvites({ account }).length).toBe(1);
-      expect(client.chatReceivedInvites.get(mockInviteId)).toEqual(mockInvite);
+      expect(client.chatReceivedInvites.get(mockInviteId.toString())).toEqual(
+        mockInvite
+      );
       expect(client.getReceivedInvites({ account })).toEqual([mockInvite]);
     });
   });
@@ -362,6 +364,10 @@ describe("ChatClient", () => {
         selfAccount,
         peerAccount: "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5FFFF",
       };
+
+      // Init chat threads here since SyncStores were not initialized due to
+      // register not being called.
+      await client.chatThreads.init();
       await client.chatThreads.set(mockChatThread.topic, mockChatThread);
 
       expect(client.getThreads().size).toBe(1);

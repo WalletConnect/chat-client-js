@@ -3,6 +3,7 @@ import EventEmitter from "events";
 import { Logger } from "@walletconnect/logger";
 import { IChatEngine } from "./engine";
 import { z } from "zod";
+import { ISyncClient } from "@walletconnect/sync-client";
 
 export const ZAccount = z.string().regex(/.*:.*:.*/, {
   message: `Must be valid address with chain specifier.`,
@@ -132,11 +133,13 @@ export abstract class IChatClient {
   public abstract readonly name: string;
   public abstract readonly keyserverUrl: string;
 
+  public abstract syncClient: ISyncClient | undefined;
+
   public abstract core: ICore;
   public abstract events: EventEmitter;
   public abstract logger: Logger;
   public abstract chatReceivedInvites: IStore<
-    number,
+    string,
     ChatClientTypes.ReceivedInvite
   >;
   public abstract chatSentInvites: IStore<string, ChatClientTypes.SentInvite>;
@@ -237,4 +240,10 @@ export abstract class IChatClient {
     event: E,
     listener: (args: ChatClientTypes.EventArguments[E]) => any
   ) => EventEmitter;
+
+  // ------ Helpers ----------------------------------------------------------//
+  public abstract initSyncStores(params: {
+    account: string;
+    signature: string;
+  }): Promise<void>;
 }

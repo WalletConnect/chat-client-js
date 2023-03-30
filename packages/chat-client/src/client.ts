@@ -19,12 +19,14 @@ import {
 
 import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient, IdentityKeychain } from "./types";
+import { ISyncClient, SyncClient, SyncStore } from "@walletconnect/sync-client";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
   public readonly keyserverUrl;
 
   public core: ICore;
+  public syncClient: ISyncClient | undefined;
   public events = new EventEmitter();
   public logger: IChatClient["logger"];
   public chatSentInvites: IChatClient["chatSentInvites"];
@@ -237,16 +239,54 @@ export class ChatClient extends IChatClient {
     return this.events.removeListener(name, listener);
   };
 
+  public initSyncStores: IChatClient["initSyncStores"] = async ({
+    account,
+    signature,
+  }) => {
+    if (!this.syncClient) return;
+
+    this.chatSentInvites = new SyncStore(
+      CHAT_SENT_INVITES_CONTEXT,
+      this.syncClient,
+      account,
+      signature
+    );
+
+    this.chatThreads = new SyncStore(
+      CHAT_THREADS_CONTEXT,
+      this.syncClient,
+      account,
+      signature
+    );
+
+    await this.chatSentInvites.init();
+    await this.chatThreads.init();
+  };
+
   // ---------- Private ----------------------------------------------- //
 
   private async initialize() {
     this.logger.trace(`Initialized`);
     try {
+      this.syncClient = await SyncClient.init({
+        core: this.core,
+        logger: this.logger,
+      });
+
+      // Use active account to init stores
+      if (this.syncClient && this.syncClient.signatures.length > 0) {
+        const signatureEntry = this.syncClient.signatures.getAll({
+          active: true,
+        })[0];
+        await this.initSyncStores({
+          account: signatureEntry.account,
+          signature: signatureEntry.signature,
+        });
+      }
+
       await this.core.start();
-      await this.chatSentInvites.init();
-      await this.chatReceivedInvites.init();
-      await this.chatThreads.init();
       await this.chatMessages.init();
+      await this.chatReceivedInvites.init();
       await this.chatKeys.init();
       await this.chatContacts.init();
       await this.engine.init();
