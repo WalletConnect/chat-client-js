@@ -418,19 +418,15 @@ describe("ChatClient", () => {
       const walletSelf1 = Wallet.createRandom();
       const walletSelf2 = Wallet.createRandom();
 
-      console.log("Registering identityKey1");
       const identityKey1 = await client.register({
         account: composeChainAddress(walletSelf1.address),
         onSign: (message) => walletSelf1.signMessage(message),
       });
-      console.log("COMPLETED: Registering identityKey1");
 
-      console.log("Registering identityKey2");
       const identityKey2 = await client.register({
         account: composeChainAddress(walletSelf2.address),
         onSign: (message) => walletSelf2.signMessage(message),
       });
-      console.log("COMPLETED: Registering identityKey2");
 
       expect(identityKey1).toBeTruthy();
       expect(identityKey2).toBeTruthy();
