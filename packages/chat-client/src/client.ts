@@ -25,6 +25,8 @@ export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
   public readonly keyserverUrl;
 
+  public projectId: string;
+
   public core: ICore;
   public syncClient: ISyncClient | undefined;
   public events = new EventEmitter();
@@ -37,15 +39,17 @@ export class ChatClient extends IChatClient {
   public chatKeys: IChatClient["chatKeys"];
   public engine: IChatClient["engine"];
 
-  static async init(opts?: ChatClientTypes.Options) {
+  static async init(opts: ChatClientTypes.Options) {
     const client = new ChatClient(opts);
     await client.initialize();
 
     return client;
   }
 
-  constructor(opts?: ChatClientTypes.Options) {
+  constructor(opts: ChatClientTypes.Options) {
     super(opts);
+
+    this.projectId = opts.projectId;
 
     const logger =
       typeof opts?.logger !== "undefined" && typeof opts?.logger !== "string"
@@ -213,8 +217,31 @@ export class ChatClient extends IChatClient {
     }
   };
 
-  public addContact: IChatClient["addContact"] = ({ account, publicKey }) => {
-    this.chatContacts.set(account, { accountId: account, publicKey });
+  public goPublic: IChatClient["goPublic"] = async ({ account }) => {
+    try {
+      return this.engine.goPublic({ account });
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
+  public goPrivate: IChatClient["goPrivate"] = async ({ account }) => {
+    try {
+      return this.engine.goPrivate({ account });
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
+  public unregister: IChatClient["unregister"] = async ({ account }) => {
+    try {
+      return this.engine.unregisterIdentity({ account });
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
   };
 
   // ---------- Events ----------------------------------------------- //

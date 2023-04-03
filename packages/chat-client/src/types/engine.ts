@@ -38,6 +38,10 @@ export abstract class IChatEngine {
 
   public abstract resolveInvite(params: { account: string }): Promise<string>;
 
+  public abstract unregisterIdentity(params: {
+    account: string;
+  }): Promise<void>;
+
   public abstract invite(params: ChatClientTypes.Invite): Promise<number>;
 
   public abstract accept(params: { id: number }): Promise<string>;

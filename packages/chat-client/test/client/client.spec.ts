@@ -27,6 +27,7 @@ const opts = {
   relayUrl:
     process.env.TEST_RELAY_URL || "wss://staging.relay.walletconnect.com",
   projectId: process.env.TEST_PROJECT_ID,
+  keyserverUrl: "https://staging.keys.walletconnect.com",
   storageOptions: {
     database: ":memory:",
   },
@@ -111,6 +112,45 @@ describe("ChatClient", () => {
     expect(peerIdentityCacao.p.iss).toEqual(
       `did:pkh:eip155:1:${walletPeer.address}`
     );
+  });
+
+  it("Can unregister an account on the keyserver", async () => {
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
+
+    const peerIdentityPublicKey = await peer.register({
+      account: composeChainAddress(walletPeer.address),
+      onSign: (message) => walletPeer.signMessage(message),
+    });
+
+    const selfIdentityPublicKey = await client.register({
+      account: `eip155:1:${walletSelf.address}`,
+      onSign: (message) => walletSelf.signMessage(message),
+    });
+
+    const selfIdentityCacao = await peer.engine.resolveIdentity({
+      publicKey: `${selfIdentityPublicKey}`,
+    });
+
+    const peerIdentityCacao = await client.engine.resolveIdentity({
+      publicKey: `${peerIdentityPublicKey}`,
+    });
+
+    expect(selfIdentityCacao.p.iss).toEqual(
+      `did:pkh:eip155:1:${walletSelf.address}`
+    );
+    expect(peerIdentityCacao.p.iss).toEqual(
+      `did:pkh:eip155:1:${walletPeer.address}`
+    );
+
+    await peer.unregister({
+      account: composeChainAddress(walletPeer.address),
+    });
+    expect(async () => {
+      await client.engine.resolveIdentity({
+        publicKey: `${peerIdentityPublicKey}`,
+      });
+    }).rejects.toThrowError();
   });
 
   it("can send & receive invites", async () => {
