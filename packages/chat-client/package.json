@@ -34,7 +34,7 @@
     "@walletconnect/core": "^2.5.2",
     "@walletconnect/jsonrpc-utils": "^1.0.6",
     "@walletconnect/logger": "^2.0.1",
-    "@walletconnect/sync-client": "^0.2.7",
+    "@walletconnect/sync-client": "^0.3.0",
     "@walletconnect/time": "^1.0.2",
     "@walletconnect/utils": "^2.5.2",
     "axios": "^0.27.2",
