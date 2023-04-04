@@ -10,13 +10,14 @@ interface JwtHeader {
 
 export interface InviteKeyClaims {
   iss: string;
-  sub: string;
+  act: string;
+  iat: number;
+  exp: number;
+  sub?: string;
   aud?: string;
   ksu?: string;
   pkh?: string;
   pke?: string;
-  iat: number;
-  exp: number;
 }
 
 export const DAY_IN_MS = 86400 * 1000;

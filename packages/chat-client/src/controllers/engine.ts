@@ -44,6 +44,7 @@ import {
   jwtExp,
 } from "../utils/jwtAuth";
 import jwt from "jsonwebtoken";
+import { verifySignature } from "@walletconnect/cacao";
 
 export class ChatEngine extends IChatEngine {
   private initialized = false;
@@ -180,6 +181,7 @@ export class ChatEngine extends IChatEngine {
         iss: encodeEd25519Key(identityKeyPub),
         sub: encodeX25519Key(pubKeyHex),
         aud: this.keyserverUrl,
+        act: "register_invite",
         iat: issuedAt,
         exp: expiration,
         pkh: didPublicKey,
@@ -221,6 +223,7 @@ export class ChatEngine extends IChatEngine {
       aud: this.keyserverUrl,
       iat: issuedAt,
       exp: expiration,
+      act: "unregister_invite",
       pkh: didPublicKey,
     };
 
@@ -276,7 +279,6 @@ export class ChatEngine extends IChatEngine {
       const { data } = await axios.get<{ value: { cacao: Cacao } }>(url);
       return data.value.cacao;
     } catch (e: any) {
-      console.error(e.toJSON());
       throw new Error("Failed to resolve identity key");
     }
   };
@@ -321,6 +323,7 @@ export class ChatEngine extends IChatEngine {
       pke: encodeX25519Key(pubkeyY),
       ksu: this.keyserverUrl,
       sub: message,
+      act: "invite_propsal",
       aud: composeDidPkh(inviteeAccount),
     };
 
@@ -369,6 +372,39 @@ export class ChatEngine extends IChatEngine {
     });
 
     return inviteId;
+  };
+
+  public unregisterIdentity: IChatEngine["unregisterIdentity"] = async ({
+    account,
+  }) => {
+    const iat = Date.now();
+    const keys = this.client.chatKeys.get(account);
+    const didPublicKey = composeDidPkh(account);
+    const unregisterIdentityPayload: InviteKeyClaims = {
+      iat,
+      exp: jwtExp(iat),
+      iss: encodeEd25519Key(keys.identityKeyPub),
+      aud: this.keyserverUrl,
+      pkh: didPublicKey,
+      act: "unregister_identity",
+    };
+
+    const idAuth = await this.generateIdAuth(
+      account,
+      unregisterIdentityPayload
+    );
+
+    const url = `${this.keyserverUrl}/identity`;
+
+    const response = await axios.delete(url, {
+      data: {
+        idAuth,
+      },
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Failed to unregister on keyserver ${response.status}`);
+    }
   };
 
   public accept: IChatEngine["accept"] = async ({ id }) => {
@@ -420,6 +456,7 @@ export class ChatEngine extends IChatEngine {
       sub: encodeX25519Key(publicKeyZ),
       aud: invite.inviterAccount,
       ksu: this.keyserverUrl,
+      act: "invite_approval",
     };
 
     const idAuth = await this.generateIdAuth(
@@ -497,6 +534,7 @@ export class ChatEngine extends IChatEngine {
       aud: composeDidPkh(
         this.client.chatThreads.get(messagePayload.topic).peerAccount
       ),
+      act: "chat_message",
     };
 
     const jsonRpcPayload = formatJsonRpcRequest("wc_chatMessage", {
@@ -847,10 +885,29 @@ export class ChatEngine extends IChatEngine {
         publicKey: decodedPayload.iss,
       });
 
+      const authorAccount = cacao.p.iss.split(":").slice(2).join(":");
+      const chainId = authorAccount.split(":")[1];
+
+      const cacaoAuthor = cacao.p.iss;
+
+      const validSignature = await verifySignature(
+        authorAccount.split(":")[2],
+        formatMessage(cacao.p, cacaoAuthor),
+        cacao.s,
+        chainId,
+        this.client.projectId
+      );
+
+      if (!validSignature) {
+        throw new Error(
+          `Invalid signature for incoming message from address ${authorAccount}`
+        );
+      }
+
       const message: ChatClientTypes.Message = {
         topic,
         message: decodedPayload.sub,
-        authorAccount: cacao.p.iss.split(":").slice(2).join(":"),
+        authorAccount,
         timestamp: new Date(decodedPayload.iat).getTime(),
       };
 

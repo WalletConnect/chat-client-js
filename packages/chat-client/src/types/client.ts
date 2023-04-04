@@ -75,6 +75,7 @@ export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
     core?: ICore;
     keyserverUrl?: string;
+    projectId: string;
   }
 
   // ---------- Data Types ----------------------------------------------- //
@@ -152,6 +153,8 @@ export abstract class IChatClient {
   public abstract chatKeys: IStore<string, IdentityKeychain>;
   public abstract engine: IChatEngine;
 
+  public abstract projectId: string;
+
   constructor(public opts?: ChatClientTypes.Options) {}
 
   // ---------- Public Methods ----------------------------------------------- //
@@ -209,10 +212,11 @@ export abstract class IChatClient {
     topic: string;
   }): ChatClientTypes.Message[];
 
-  public abstract addContact(params: {
-    account: string;
-    publicKey: string;
-  }): void;
+  public abstract goPublic(params: { account: string }): Promise<string>;
+
+  public abstract goPrivate(params: { account: string }): Promise<void>;
+
+  public abstract unregister(params: { account: string }): Promise<void>;
 
   // ---------- Event Handlers ----------------------------------------------- //
 
