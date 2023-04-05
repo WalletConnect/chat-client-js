@@ -305,6 +305,14 @@ describe("ChatClient", () => {
       peerMessages.every((message) => messagesMatch(message, payload))
     ).toBeTruthy();
 
+    const receivedInvites = peer.chatReceivedInvites.getAll();
+
+    expect(receivedInvites.length).toBe(1);
+
+    const receivedInvite = receivedInvites[0];
+
+    expect(receivedInvite.status).toBe("approved");
+
     expect(eventCount).toBe(2);
   });
 
