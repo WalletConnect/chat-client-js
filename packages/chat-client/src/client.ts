@@ -283,7 +283,18 @@ export class ChatClient extends IChatClient {
       CHAT_THREADS_CONTEXT,
       this.syncClient,
       account,
-      signature
+      signature,
+      (_, thread) => {
+        const invites = this.chatReceivedInvites.getAll({
+          inviterAccount: thread?.peerAccount,
+        });
+
+        if (invites.length === 0) return;
+
+        const { id } = invites[0];
+
+        this.chatReceivedInvites.update(id.toString(), { status: "approved" });
+      }
     );
 
     await this.chatSentInvites.init();
