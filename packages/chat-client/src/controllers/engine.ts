@@ -20,6 +20,21 @@ import {
   getSdkError,
   hashKey,
 } from "@walletconnect/utils";
+
+import {
+  IIdentityKeys,
+  IdentityKeyClaims,
+  IdentityKeys,
+} from "@walletconnect/identity-keys";
+
+import {
+  composeDidPkh,
+  decodeX25519Key,
+  encodeEd25519Key,
+  encodeX25519Key,
+  jwtExp,
+} from "@walletconnect/did-jwt";
+
 import axios from "axios";
 import EventEmitter from "events";
 import jwt from "jsonwebtoken";
@@ -34,17 +49,6 @@ import {
   ZMessage,
 } from "../types";
 import { engineEvent } from "../utils/engineUtil";
-
-import {
-  IIdentityKeys,
-  IdentityKeyClaims,
-  IdentityKeys,
-  composeDidPkh,
-  decodeX25519Key,
-  encodeEd25519Key,
-  encodeX25519Key,
-  jwtExp,
-} from "@walletconnect/identity-keys";
 
 export class ChatEngine extends IChatEngine {
   private initialized = false;
