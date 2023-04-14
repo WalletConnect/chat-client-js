@@ -484,4 +484,79 @@ describe("ChatClient", () => {
       expect(identityKey1).to.not.eq(identityKey2);
     });
   });
+
+  describe("Sync capability", () => {
+    it("Can sync sentInvites", async () => {
+      const clientSyncPeer = await ChatClient.init(opts);
+      const walletSelf = Wallet.createRandom();
+      const walletPeer = Wallet.createRandom();
+
+      let peerReceivedInvite = false;
+      let peerJoinedChat = false;
+      let selfSyncPeerReceivedUpdate = false;
+
+      await client.register({
+        account: composeChainAddress(walletSelf.address),
+        onSign: (message) => walletSelf.signMessage(message),
+      });
+
+      await peer.register({
+        account: composeChainAddress(walletPeer.address),
+        onSign: (message) => walletPeer.signMessage(message),
+      });
+
+      await clientSyncPeer.register({
+        account: composeChainAddress(walletSelf.address),
+        onSign: (message) => walletSelf.signMessage(message),
+      });
+
+      expect(clientSyncPeer.syncClient).toBeDefined();
+
+      clientSyncPeer.syncClient?.on("sync_update", () => {
+        selfSyncPeerReceivedUpdate = true;
+      });
+
+      peer.on("chat_invite", async (args) => {
+        const { id } = args;
+        console.log("chat_invite:", args);
+        const chatThreadTopic = await peer.accept({ id });
+        expect(chatThreadTopic).toBeDefined();
+        peerReceivedInvite = true;
+      });
+
+      client.on("chat_invite_accepted", async (args) => {
+        const { topic } = args;
+        console.log("chat_invite_accepted:", args);
+        expect(topic).toBeDefined();
+        peerJoinedChat = true;
+      });
+
+      const invite: ChatClientTypes.Invite = {
+        message: "hey let's chat",
+        inviterAccount: composeChainAddress(walletSelf.address),
+        inviteeAccount: composeChainAddress(walletPeer.address),
+        inviteePublicKey: await client.resolve({
+          account: composeChainAddress(walletPeer.address),
+        }),
+      };
+
+      const inviteId = await client.invite(invite);
+
+      await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
+
+      await waitForEvent(() => selfSyncPeerReceivedUpdate);
+
+      expect(
+        client.getSentInvites({
+          account: composeChainAddress(walletSelf.address),
+        })
+      ).toEqual(
+        clientSyncPeer.getSentInvites({
+          account: composeChainAddress(walletSelf.address),
+        })
+      );
+
+      expect(inviteId).toBeDefined();
+    });
+  });
 });
