@@ -75,7 +75,7 @@ export class ChatClient extends IChatClient {
       this.logger,
       CHAT_RECEIVED_INVITES_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX,
-      (invite: ChatClientTypes.ReceivedInvite) => invite.id
+      (invite: ChatClientTypes.ReceivedInvite) => invite.id.toString()
     );
     this.chatThreads = new Store(
       this.core,
