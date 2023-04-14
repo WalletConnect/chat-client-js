@@ -276,7 +276,20 @@ export class ChatClient extends IChatClient {
       CHAT_SENT_INVITES_CONTEXT,
       this.syncClient,
       account,
-      signature
+      signature,
+      (_, invite) => {
+        if (!invite) {
+          return;
+        }
+
+        const invites = this.chatSentInvites.getAll({
+          inviteeAccount: invite.inviteeAccount,
+        });
+
+        if (invites.length > 0) return;
+
+        this.core.relayer.subscribe(invite.responseTopic);
+      }
     );
 
     this.chatThreads = new SyncStore(
