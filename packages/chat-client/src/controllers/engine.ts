@@ -21,13 +21,10 @@ import {
   hashKey,
 } from "@walletconnect/utils";
 
-import {
-  IIdentityKeys,
-  IdentityKeyClaims,
-  IdentityKeys,
-} from "@walletconnect/identity-keys";
+import { IIdentityKeys, IdentityKeys } from "@walletconnect/identity-keys";
 
 import {
+  JwtPayload,
   composeDidPkh,
   decodeX25519Key,
   encodeEd25519Key,
@@ -90,10 +87,7 @@ export class ChatEngine extends IChatEngine {
     return this.identityKeys.unregisterIdentity({ account });
   };
 
-  private generateIdAuth = async (
-    accountId: string,
-    payload: IdentityKeyClaims
-  ) => {
+  private generateIdAuth = async (accountId: string, payload: JwtPayload) => {
     return this.identityKeys.generateIdAuth(accountId, payload);
   };
 
@@ -128,7 +122,7 @@ export class ChatEngine extends IChatEngine {
       const issuedAt = Math.round(Date.now() / 1000);
       const expiration = jwtExp(issuedAt);
       const didPublicKey = composeDidPkh(accountId);
-      const payload: IdentityKeyClaims = {
+      const payload = {
         iss: encodeEd25519Key(identityKeyPub),
         sub: encodeX25519Key(pubKeyHex),
         aud: this.keyserverUrl,
@@ -168,7 +162,7 @@ export class ChatEngine extends IChatEngine {
     const issuedAt = Math.round(Date.now() / 1000);
     const expiration = jwtExp(issuedAt);
     const didPublicKey = composeDidPkh(accountId);
-    const payload: IdentityKeyClaims = {
+    const payload = {
       iss: encodeEd25519Key(identityKeyPub),
       sub: encodeX25519Key(inviteKeyPub),
       aud: this.keyserverUrl,
@@ -252,7 +246,7 @@ export class ChatEngine extends IChatEngine {
     console.log("invite > inviteTopic: ", inviteTopic);
 
     const iat = Date.now();
-    const inviteProposalPayload: IdentityKeyClaims = {
+    const inviteProposalPayload = {
       iat,
       exp: jwtExp(iat),
       iss: encodeEd25519Key(keys.identityKeyPub),
@@ -352,7 +346,7 @@ export class ChatEngine extends IChatEngine {
     const chatThreadTopic = hashKey(symKeyT);
 
     const iat = Date.now();
-    const inviteApprovalPayload: IdentityKeyClaims = {
+    const inviteApprovalPayload = {
       iat,
       exp: jwtExp(iat),
       iss: encodeEd25519Key(keys.identityKeyPub),
@@ -428,7 +422,7 @@ export class ChatEngine extends IChatEngine {
     const messagePayload = ZMessage.parse(payload);
     const keys = this.client.chatKeys.get(this.currentAccount);
     const iat = messagePayload.timestamp;
-    const messageKeyClaims: IdentityKeyClaims = {
+    const messageKeyClaims = {
       iat,
       exp: jwtExp(iat),
       iss: encodeEd25519Key(keys.identityKeyPub),
