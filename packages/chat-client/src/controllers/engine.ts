@@ -21,8 +21,6 @@ import {
   hashKey,
 } from "@walletconnect/utils";
 
-import { IIdentityKeys, IdentityKeys } from "@walletconnect/identity-keys";
-
 import {
   JwtPayload,
   composeDidPkh,
@@ -51,12 +49,10 @@ export class ChatEngine extends IChatEngine {
   private initialized = false;
   private currentAccount = "";
   private events = new EventEmitter();
-  private identityKeys: IIdentityKeys;
   private keyserverUrl = this.client.keyserverUrl;
 
   constructor(client: IChatClient) {
     super(client);
-    this.identityKeys = new IdentityKeys(client.core);
   }
 
   public init: IChatEngine["init"] = async () => {
@@ -78,17 +74,17 @@ export class ChatEngine extends IChatEngine {
     accountId: string,
     onSign: (message: string) => Promise<string>
   ): Promise<string> => {
-    return this.identityKeys.registerIdentity({ accountId, onSign });
+    return this.client.identityKeys.registerIdentity({ accountId, onSign });
   };
 
   public unregisterIdentity: IChatEngine["unregisterIdentity"] = async ({
     account,
   }) => {
-    return this.identityKeys.unregisterIdentity({ account });
+    return this.client.identityKeys.unregisterIdentity({ account });
   };
 
   private generateIdAuth = async (accountId: string, payload: JwtPayload) => {
-    return this.identityKeys.generateIdAuth(accountId, payload);
+    return this.client.identityKeys.generateIdAuth(accountId, payload);
   };
 
   // Needs to be called after identity key has been created.
@@ -105,7 +101,7 @@ export class ChatEngine extends IChatEngine {
   public resolveIdentity: IChatEngine["resolveIdentity"] = async ({
     publicKey,
   }) => {
-    return this.identityKeys.resolveIdentity({ publicKey });
+    return this.client.identityKeys.resolveIdentity({ publicKey });
   };
 
   private registerInvite = async (accountId: string, priv = false) => {

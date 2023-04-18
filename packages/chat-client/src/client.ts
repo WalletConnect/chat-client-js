@@ -20,6 +20,7 @@ import {
 import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient, IdentityKeychain } from "./types";
 import { ISyncClient, SyncClient, SyncStore } from "@walletconnect/sync-client";
+import { IdentityKeys } from "@walletconnect/identity-keys";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
@@ -37,6 +38,7 @@ export class ChatClient extends IChatClient {
   public chatMessages: IChatClient["chatMessages"];
   public chatContacts: IChatClient["chatContacts"];
   public chatKeys: IChatClient["chatKeys"];
+  public identityKeys: IChatClient["identityKeys"];
   public engine: IChatClient["engine"];
 
   static async init(opts: ChatClientTypes.Options) {
@@ -102,6 +104,7 @@ export class ChatClient extends IChatClient {
       CHAT_CONTACTS_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX
     );
+    this.identityKeys = new IdentityKeys(this.core);
     this.engine = new ChatEngine(this);
   }
 
@@ -340,6 +343,7 @@ export class ChatClient extends IChatClient {
       await this.chatReceivedInvites.init();
       await this.chatKeys.init();
       await this.chatContacts.init();
+      await this.identityKeys.init();
       await this.engine.init();
       this.logger.info(`ChatClient Initialization Success`);
     } catch (error: any) {
