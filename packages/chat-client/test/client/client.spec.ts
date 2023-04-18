@@ -24,10 +24,9 @@ const waitForEvent = async (checkForEvent: (...args: any[]) => boolean) => {
 
 const opts = {
   logger: "error",
-  relayUrl:
-    process.env.TEST_RELAY_URL || "wss://staging.relay.walletconnect.com",
+  relayUrl: process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com",
   projectId: process.env.TEST_PROJECT_ID,
-  keyserverUrl: "https://staging.keys.walletconnect.com",
+  keyserverUrl: "https://keys.walletconnect.com",
   storageOptions: {
     database: ":memory:",
   },
@@ -74,12 +73,8 @@ describe("ChatClient", () => {
     );
     const peerKeys = peer.chatKeys.get(composeChainAddress(walletPeer.address));
 
-    expect(selfKeys.identityKeyPub.length).toBeGreaterThan(0);
-    expect(selfKeys.identityKeyPriv.length).toBeGreaterThan(0);
     expect(selfKeys.inviteKeyPub.length).toBeGreaterThan(0);
     expect(selfKeys.inviteKeyPriv.length).toBeGreaterThan(0);
-    expect(peerKeys.identityKeyPub.length).toBeGreaterThan(0);
-    expect(peerKeys.identityKeyPriv.length).toBeGreaterThan(0);
     expect(peerKeys.inviteKeyPub.length).toBeGreaterThan(0);
     expect(peerKeys.inviteKeyPriv.length).toBeGreaterThan(0);
   });

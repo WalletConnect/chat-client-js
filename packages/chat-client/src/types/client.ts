@@ -123,10 +123,8 @@ export declare namespace ChatClientTypes {
   }
 }
 
-export interface IdentityKeychain {
-  identityKeyPub: string;
+export interface InviteKeychain {
   accountId: string;
-  identityKeyPriv: string;
   inviteKeyPub: string;
   inviteKeyPriv: string;
 }
@@ -151,7 +149,7 @@ export abstract class IChatClient {
     string,
     { messages: ChatClientTypes.Message[]; topic: string }
   >;
-  public abstract chatKeys: IStore<string, IdentityKeychain>;
+  public abstract chatKeys: IStore<string, InviteKeychain>;
   public abstract identityKeys: IdentityKeys;
   public abstract engine: IChatEngine;
 

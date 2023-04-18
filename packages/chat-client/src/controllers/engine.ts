@@ -91,7 +91,8 @@ export class ChatEngine extends IChatEngine {
   private generateAndStoreInviteKey = async (accountId: string) => {
     const pubKeyHex = await this.client.core.crypto.generateKeyPair();
     const privKeyHex = this.client.core.crypto.keychain.get(pubKeyHex);
-    this.client.chatKeys.update(accountId, {
+    await this.client.chatKeys.set(accountId, {
+      accountId,
       inviteKeyPriv: privKeyHex,
       inviteKeyPub: pubKeyHex,
     });
@@ -113,7 +114,11 @@ export class ChatEngine extends IChatEngine {
     } catch {
       const pubKeyHex = await this.generateAndStoreInviteKey(accountId);
 
-      const { identityKeyPub } = this.client.chatKeys.get(accountId);
+      const identityKeyPub = await this.client.identityKeys.getIdentity({
+        account: accountId,
+      });
+
+      console.table({ identityKeyPub: encodeEd25519Key(identityKeyPub) });
 
       const issuedAt = Math.round(Date.now() / 1000);
       const expiration = jwtExp(issuedAt);
@@ -153,7 +158,9 @@ export class ChatEngine extends IChatEngine {
   private unregisterInvite = async (accountId: string) => {
     const { inviteKeyPub } = this.client.chatKeys.get(accountId);
 
-    const { identityKeyPub } = this.client.chatKeys.get(accountId);
+    const identityKeyPub = await this.client.identityKeys.getIdentity({
+      account: accountId,
+    });
 
     const issuedAt = Math.round(Date.now() / 1000);
     const expiration = jwtExp(issuedAt);
@@ -231,7 +238,9 @@ export class ChatEngine extends IChatEngine {
 
     console.log("invite > responderInvitePublicKey: ", inviteePublicKey);
 
-    const keys = this.client.chatKeys.get(inviterAccount);
+    const identityKeyPub = await this.client.identityKeys.getIdentity({
+      account: inviterAccount,
+    });
 
     const pubkeyX = inviteePublicKey;
 
@@ -245,7 +254,7 @@ export class ChatEngine extends IChatEngine {
     const inviteProposalPayload = {
       iat,
       exp: jwtExp(iat),
-      iss: encodeEd25519Key(keys.identityKeyPub),
+      iss: encodeEd25519Key(identityKeyPub),
       pke: encodeX25519Key(pubkeyY),
       ksu: this.keyserverUrl,
       sub: message,
@@ -310,6 +319,10 @@ export class ChatEngine extends IChatEngine {
     // since crypto.decode doesn't expose it.
     // Can we simplify this?
     const keys = this.client.chatKeys.get(this.currentAccount);
+
+    const identityKeyPub = await this.client.identityKeys.getIdentity({
+      account: this.currentAccount,
+    });
     console.log(
       "accept > this.client.chatKeys.get('invitePublicKey'): ",
       keys.inviteKeyPub
@@ -345,7 +358,7 @@ export class ChatEngine extends IChatEngine {
     const inviteApprovalPayload = {
       iat,
       exp: jwtExp(iat),
-      iss: encodeEd25519Key(keys.identityKeyPub),
+      iss: encodeEd25519Key(identityKeyPub),
       sub: encodeX25519Key(publicKeyZ),
       aud: invite.inviterAccount,
       ksu: this.keyserverUrl,
@@ -416,12 +429,14 @@ export class ChatEngine extends IChatEngine {
 
   public sendMessage: IChatEngine["sendMessage"] = async (payload) => {
     const messagePayload = ZMessage.parse(payload);
-    const keys = this.client.chatKeys.get(this.currentAccount);
+    const identityKeyPub = await this.client.identityKeys.getIdentity({
+      account: this.currentAccount,
+    });
     const iat = messagePayload.timestamp;
     const messageKeyClaims = {
       iat,
       exp: jwtExp(iat),
-      iss: encodeEd25519Key(keys.identityKeyPub),
+      iss: encodeEd25519Key(identityKeyPub),
       sub: messagePayload.message,
       ksu: this.keyserverUrl,
       aud: composeDidPkh(
