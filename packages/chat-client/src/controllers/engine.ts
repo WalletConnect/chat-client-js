@@ -323,7 +323,7 @@ export class ChatEngine extends IChatEngine {
       pke: encodeX25519Key(pubkeyY),
       ksu: this.keyserverUrl,
       sub: message,
-      act: "invite_propsal",
+      act: "invite_proposal",
       aud: composeDidPkh(inviteeAccount),
     };
 
