@@ -244,6 +244,17 @@ export class ChatClient extends IChatClient {
     }
   };
 
+  public getPublicInviteKey: IChatClient["getPublicInviteKey"] = async ({
+    account,
+  }) => {
+    try {
+      return this.chatKeys.get(account).inviteKeyPub;
+    } catch (error: any) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  };
+
   // ---------- Events ----------------------------------------------- //
 
   public emit: IChatClient["emit"] = (name, listener) => {

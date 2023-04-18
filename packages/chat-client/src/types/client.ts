@@ -218,6 +218,10 @@ export abstract class IChatClient {
 
   public abstract unregister(params: { account: string }): Promise<void>;
 
+  public abstract getPublicInviteKey(params: {
+    account: string;
+  }): Promise<string>;
+
   // ---------- Event Handlers ----------------------------------------------- //
 
   public abstract emit: <E extends ChatClientTypes.Event>(
