@@ -18,7 +18,7 @@ import {
 } from "./constants";
 
 import { ChatEngine } from "./controllers";
-import { ChatClientTypes, IChatClient, IdentityKeychain } from "./types";
+import { ChatClientTypes, IChatClient, InviteKeychain } from "./types";
 import { ISyncClient, SyncClient, SyncStore } from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
 
@@ -96,7 +96,7 @@ export class ChatClient extends IChatClient {
       this.logger,
       CHAT_KEYS_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX,
-      (keys: IdentityKeychain) => keys.accountId
+      (keys: InviteKeychain) => keys.accountId
     );
     this.chatContacts = new Store(
       this.core,
