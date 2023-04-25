@@ -57,6 +57,7 @@ export const ZThread = z.object({
   topic: z.string().max(80),
   selfAccount: ZAccount,
   peerAccount: ZAccount,
+  symKey: z.string(),
 });
 
 export const ZContact = z.object({
