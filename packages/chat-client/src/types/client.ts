@@ -4,6 +4,7 @@ import { Logger } from "@walletconnect/logger";
 import { IChatEngine } from "./engine";
 import { z } from "zod";
 import { ISyncClient } from "@walletconnect/sync-client";
+import { IdentityKeys } from "@walletconnect/identity-keys";
 
 export const ZAccount = z.string().regex(/.*:.*:.*/, {
   message: `Must be valid address with chain specifier.`,
@@ -122,10 +123,8 @@ export declare namespace ChatClientTypes {
   }
 }
 
-export interface IdentityKeychain {
-  identityKeyPub: string;
+export interface InviteKeychain {
   accountId: string;
-  identityKeyPriv: string;
   inviteKeyPub: string;
   inviteKeyPriv: string;
 }
@@ -150,7 +149,8 @@ export abstract class IChatClient {
     string,
     { messages: ChatClientTypes.Message[]; topic: string }
   >;
-  public abstract chatKeys: IStore<string, IdentityKeychain>;
+  public abstract chatKeys: IStore<string, InviteKeychain>;
+  public abstract identityKeys: IdentityKeys;
   public abstract engine: IChatEngine;
 
   public abstract projectId: string;
