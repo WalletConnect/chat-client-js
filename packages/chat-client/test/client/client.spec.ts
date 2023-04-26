@@ -643,6 +643,8 @@ describe("ChatClient", () => {
         authorAccount: composeChainAddress(walletSelf.address),
       };
 
+      expect(inviteId).toBeDefined();
+
       await client.message({
         ...payload,
         message: "messageA",
@@ -657,7 +659,43 @@ describe("ChatClient", () => {
         timestamp: Date.now(),
       });
 
-      expect(inviteId).toBeDefined();
-    });
+      console.log(
+        "threads",
+        peer.getThreads({ account: composeChainAddress(walletPeer.address) })
+      );
+
+      await waitForEvent(
+        () => peer.chatMessages.get(threadTopic).messages.length > 1
+      );
+
+      await peer.message({
+        topic: threadTopic,
+        authorAccount: composeChainAddress(walletPeer.address),
+        message: "messageC",
+        timestamp: Date.now(),
+      });
+
+      await waitForEvent(
+        () => peer.chatMessages.get(threadTopic).messages.length === 3
+      );
+
+      await waitForEvent(
+        () => client.chatMessages.get(threadTopic).messages.length === 3
+      );
+
+      await waitForEvent(
+        () => clientSyncPeer.chatMessages.get(threadTopic).messages.length === 3
+      );
+
+      expect(
+        client
+          .getMessages({ topic: threadTopic })
+          .find((m) => m.message === "messageA")
+      ).toEqual(
+        clientSyncPeer
+          .getMessages({ topic: threadTopic })
+          .find((m) => m.message === "messageA")
+      );
+    }, 15000);
   });
 });
