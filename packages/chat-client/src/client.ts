@@ -301,6 +301,10 @@ export class ChatClient extends IChatClient {
       account,
       signature,
       (_, thread) => {
+        if (!thread) return;
+        this.core.crypto.setSymKey(thread.symKey, thread.topic);
+        this.core.relayer.subscribe(thread.topic);
+
         const invites = this.chatReceivedInvites.getAll({
           inviterAccount: thread?.peerAccount,
         });

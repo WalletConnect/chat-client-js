@@ -384,6 +384,7 @@ export class ChatEngine extends IChatEngine {
       topic: chatThreadTopic,
       selfAccount: this.currentAccount,
       peerAccount: invite.inviterAccount,
+      symKey: symKeyT,
     });
 
     console.log("accept > chatThreads.set:", chatThreadTopic, {
@@ -738,6 +739,7 @@ export class ChatEngine extends IChatEngine {
         topic: chatThreadTopic,
         selfAccount: inviterAccount,
         peerAccount: inviteeAccount,
+        symKey: symKeyT,
       });
 
       console.log("onInviteResponse > chatThreads.set: ", chatThreadTopic, {
