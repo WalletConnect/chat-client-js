@@ -32,6 +32,7 @@ export const ZSentInvite = z.object({
   inviterAccount: ZAccount,
   inviteeAccount: ZAccount,
   responseTopic: z.string().max(80),
+  symKey: z.string(),
   status: ZInviteStatus,
 });
 

@@ -291,6 +291,7 @@ export class ChatClient extends IChatClient {
 
         if (invites.length > 0) return;
 
+        this.core.crypto.setSymKey(invite.symKey, invite.responseTopic);
         this.core.relayer.subscribe(invite.responseTopic);
       }
     );

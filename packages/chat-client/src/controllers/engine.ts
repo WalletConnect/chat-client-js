@@ -303,6 +303,7 @@ export class ChatEngine extends IChatEngine {
       responseTopic,
       status: "pending",
       inviterAccount,
+      symKey: symKeyI,
       message,
     });
 
