@@ -196,6 +196,100 @@ describe("ChatClient", () => {
     expect(inviteId).toBeDefined();
   });
 
+  it("throws error when inviting previously invited address", async () => {
+    let peerReceivedInvite = false;
+
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
+
+    await peer.register({
+      account: composeChainAddress(walletPeer.address),
+      onSign: (message) => walletPeer.signMessage(message),
+    });
+
+    await client.register({
+      account: composeChainAddress(walletSelf.address),
+      onSign: (message) => walletSelf.signMessage(message),
+    });
+
+    peer.on("chat_invite", async () => {
+      peerReceivedInvite = true;
+    });
+
+    const invite: ChatClientTypes.Invite = {
+      message: "hey let's chat",
+      inviterAccount: composeChainAddress(walletSelf.address),
+      inviteeAccount: composeChainAddress(walletPeer.address),
+      inviteePublicKey: await client.resolve({
+        account: composeChainAddress(walletPeer.address),
+      }),
+    };
+
+    const inviteId = await client.invite(invite);
+
+    await waitForEvent(() => peerReceivedInvite);
+
+    expect(inviteId).toBeDefined();
+
+    expect(client.invite(invite)).rejects.toEqual(
+      new Error(`Address ${invite.inviteeAccount} already invited`)
+    );
+  });
+
+  it("throws error when inviting address sharing a thread", async () => {
+    let peerReceivedInvite = false;
+    let peerJoinedChat = false;
+
+    const walletSelf = Wallet.createRandom();
+    const walletPeer = Wallet.createRandom();
+
+    await peer.register({
+      account: composeChainAddress(walletPeer.address),
+      onSign: (message) => walletPeer.signMessage(message),
+    });
+
+    await client.register({
+      account: composeChainAddress(walletSelf.address),
+      onSign: (message) => walletSelf.signMessage(message),
+    });
+
+    peer.on("chat_invite", async (args) => {
+      const { id } = args;
+      console.log("chat_invite:", args);
+      const chatThreadTopic = await peer.accept({ id });
+      expect(chatThreadTopic).toBeDefined();
+      peerReceivedInvite = true;
+    });
+
+    client.on("chat_invite_accepted", async (args) => {
+      const { topic } = args;
+      console.log("chat_invite_accepted:", args);
+      expect(topic).toBeDefined();
+      peerJoinedChat = true;
+    });
+
+    const invite: ChatClientTypes.Invite = {
+      message: "hey let's chat",
+      inviterAccount: composeChainAddress(walletSelf.address),
+      inviteeAccount: composeChainAddress(walletPeer.address),
+      inviteePublicKey: await client.resolve({
+        account: composeChainAddress(walletPeer.address),
+      }),
+    };
+
+    const inviteId = await client.invite(invite);
+
+    await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
+
+    expect(inviteId).toBeDefined();
+
+    expect(client.invite(invite)).rejects.toEqual(
+      new Error(
+        `Address ${invite.inviteeAccount} already has established thread`
+      )
+    );
+  });
+
   it("can send & receive messages", async () => {
     let peerReceivedInvite = false;
     let peerJoinedChat = false;
