@@ -228,10 +228,26 @@ export class ChatEngine extends IChatEngine {
   };
 
   public invite: IChatEngine["invite"] = async (invite) => {
-    // resolve peer account pubKey X
-
     const { inviteePublicKey, inviterAccount, inviteeAccount, message } =
       ZInvite.parse(invite);
+
+    const alreadyInvited = this.client.chatSentInvites
+      .getAll()
+      .some((inv) => inv.inviteeAccount === invite.inviteeAccount);
+
+    const alreadyHasThread = this.client.chatThreads
+      .getAll()
+      .some((thread) => thread.peerAccount === invite.inviteeAccount);
+
+    if (alreadyHasThread) {
+      throw new Error(
+        `Address ${invite.inviteeAccount} already has established thread`
+      );
+    }
+
+    if (alreadyInvited) {
+      throw new Error(`Address ${invite.inviteeAccount} already invited`);
+    }
 
     // generate a keyPair Y to encrypt the invite with derived DH symKey I.
     const pubkeyY = await this.client.core.crypto.generateKeyPair();
