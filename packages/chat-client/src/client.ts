@@ -285,12 +285,10 @@ export class ChatClient extends IChatClient {
           return;
         }
 
-        const invites = this.chatSentInvites.getAll({
-          inviteeAccount: invite.inviteeAccount,
-        });
-
-        if (invites.length > 0) return;
-
+        this.core.crypto.keychain.set(
+          invite.inviterPubKeyY,
+          invite.inviterPrivKeyY
+        );
         this.core.crypto.setSymKey(invite.symKey, invite.responseTopic);
         this.core.relayer.subscribe(invite.responseTopic);
       }

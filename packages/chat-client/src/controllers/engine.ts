@@ -251,6 +251,7 @@ export class ChatEngine extends IChatEngine {
 
     // generate a keyPair Y to encrypt the invite with derived DH symKey I.
     const pubkeyY = await this.client.core.crypto.generateKeyPair();
+    const privKeyY = this.client.core.crypto.keychain.get(pubkeyY);
 
     console.log("invite > responderInvitePublicKey: ", inviteePublicKey);
 
@@ -320,6 +321,8 @@ export class ChatEngine extends IChatEngine {
       status: "pending",
       inviterAccount,
       symKey: symKeyI,
+      inviterPubKeyY: pubkeyY,
+      inviterPrivKeyY: privKeyY,
       message,
     });
 
