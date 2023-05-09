@@ -231,17 +231,13 @@ export class ChatEngine extends IChatEngine {
     const { inviteePublicKey, inviterAccount, inviteeAccount, message } =
       ZInvite.parse(invite);
 
-    const alreadyInvited = Boolean(
-      this.client.chatSentInvites
-        .getAll()
-        .find((inv) => inv.inviteeAccount === invite.inviteeAccount)
-    );
+    const alreadyInvited = this.client.chatSentInvites
+      .getAll()
+      .some((inv) => inv.inviteeAccount === invite.inviteeAccount);
 
-    const alreadyHasThread = Boolean(
-      this.client.chatThreads
-        .getAll()
-        .find((thread) => thread.peerAccount === invite.inviteeAccount)
-    );
+    const alreadyHasThread = this.client.chatThreads
+      .getAll()
+      .some((thread) => thread.peerAccount === invite.inviteeAccount);
 
     if (alreadyHasThread) {
       throw new Error(
