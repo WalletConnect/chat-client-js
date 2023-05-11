@@ -290,7 +290,7 @@ export class ChatClient extends IChatClient {
           invite.inviterPrivKeyY
         );
 
-        // Create fake history entry so that sync peer can handle
+        // Accepting an invite will trigger a call for `core.history.resolve`. Create fake history entry so that sync peer can handle
         // accepting the invite
         this.core.history.set(invite.responseTopic, {
           id: invite.id,
