@@ -380,7 +380,7 @@ export class ChatEngine extends IChatEngine {
       exp: jwtExp(iat),
       iss: encodeEd25519Key(identityKeyPub),
       sub: encodeX25519Key(publicKeyZ),
-      aud: invite.inviterAccount,
+      aud: composeDidPkh(invite.inviterAccount),
       ksu: this.keyserverUrl,
       act: "invite_approval",
     };
