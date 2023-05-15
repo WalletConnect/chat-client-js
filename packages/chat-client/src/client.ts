@@ -290,7 +290,6 @@ export class ChatClient extends IChatClient {
         ) {
           return;
         }
-
         this.core.crypto.keychain.set(
           invite.inviterPubKeyY,
           invite.inviterPrivKeyY
@@ -306,9 +305,13 @@ export class ChatClient extends IChatClient {
             params: {},
           });
           this.core.crypto.setSymKey(invite.symKey, invite.responseTopic);
-          this.core.relayer.subscribe(invite.responseTopic);
+
+          if (
+            !this.core.relayer.subscriber.isSubscribed(invite.responseTopic)
+          ) {
+            this.core.relayer.subscribe(invite.responseTopic);
+          }
         } catch (e) {
-          console.error(e);
           this.logger.error(e, "Failed to init history for invite");
         }
       }
