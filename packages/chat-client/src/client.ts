@@ -285,6 +285,12 @@ export class ChatClient extends IChatClient {
           return;
         }
 
+        if (
+          this.core.relayer.subscriber.subscriptions.has(invite.responseTopic)
+        ) {
+          return;
+        }
+
         this.core.crypto.keychain.set(
           invite.inviterPubKeyY,
           invite.inviterPrivKeyY
@@ -311,6 +317,11 @@ export class ChatClient extends IChatClient {
       signature,
       (_, thread) => {
         if (!thread) return;
+
+        if (this.core.relayer.subscriber.subscriptions.has(thread.topic)) {
+          return;
+        }
+
         this.core.crypto.setSymKey(thread.symKey, thread.topic);
         this.core.relayer.subscribe(thread.topic);
 
