@@ -408,6 +408,13 @@ export class ChatEngine extends IChatEngine {
       symKey: symKeyT,
     });
 
+    if (!this.client.chatMessages.keys.includes(chatThreadTopic)) {
+      await this.client.chatMessages.set(chatThreadTopic, {
+        topic: chatThreadTopic,
+        messages: [],
+      });
+    }
+
     console.log("accept > chatThreads.set:", chatThreadTopic, {
       topic: chatThreadTopic,
       selfAccount: this.currentAccount,
@@ -762,6 +769,13 @@ export class ChatEngine extends IChatEngine {
         peerAccount: inviteeAccount,
         symKey: symKeyT,
       });
+
+      if (!this.client.chatMessages.keys.includes(chatThreadTopic)) {
+        await this.client.chatMessages.set(chatThreadTopic, {
+          topic: chatThreadTopic,
+          messages: [],
+        });
+      }
 
       console.log("onInviteResponse > chatThreads.set: ", chatThreadTopic, {
         topic: chatThreadTopic,

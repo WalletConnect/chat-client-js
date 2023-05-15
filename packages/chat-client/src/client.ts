@@ -285,35 +285,27 @@ export class ChatClient extends IChatClient {
           return;
         }
 
-        if (
-          this.core.relayer.subscriber.subscriptions.has(invite.responseTopic)
-        ) {
-          return;
-        }
         this.core.crypto.keychain.set(
           invite.inviterPubKeyY,
           invite.inviterPrivKeyY
         );
 
-        try {
-          // Accepting an invite will trigger a call for `core.history.resolve`. Create fake history entry so that sync peer can handle
-          // accepting the invite
-          this.core.history.set(invite.responseTopic, {
-            id: invite.id,
-            jsonrpc: "2.0",
-            method: "chat_invite",
-            params: {},
-          });
-          this.core.crypto.setSymKey(invite.symKey, invite.responseTopic);
-
-          if (
-            !this.core.relayer.subscriber.isSubscribed(invite.responseTopic)
-          ) {
-            this.core.relayer.subscribe(invite.responseTopic);
-          }
-        } catch (e) {
-          this.logger.error(e, "Failed to init history for invite");
+        if (
+          this.core.relayer.subscriber.topics.includes(invite.responseTopic)
+        ) {
+          return;
         }
+
+        // Accepting an invite will trigger a call for `core.history.resolve`. Create fake history entry so that sync peer can handle
+        // accepting the invite
+        this.core.history.set(invite.responseTopic, {
+          id: invite.id,
+          jsonrpc: "2.0",
+          method: "chat_invite",
+          params: {},
+        });
+        this.core.crypto.setSymKey(invite.symKey, invite.responseTopic);
+        this.core.relayer.subscribe(invite.responseTopic);
       }
     );
 
@@ -324,12 +316,12 @@ export class ChatClient extends IChatClient {
       signature,
       (_, thread) => {
         if (!thread) return;
+        this.core.crypto.setSymKey(thread.symKey, thread.topic);
 
-        if (this.core.relayer.subscriber.subscriptions.has(thread.topic)) {
+        if (this.core.relayer.subscriber.topics.includes(thread.topic)) {
           return;
         }
 
-        this.core.crypto.setSymKey(thread.symKey, thread.topic);
         this.core.relayer.subscribe(thread.topic);
 
         const invites = this.chatReceivedInvites.getAll({
