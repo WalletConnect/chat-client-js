@@ -323,6 +323,7 @@ export class ChatEngine extends IChatEngine {
       symKey: symKeyI,
       inviterPubKeyY: pubkeyY,
       inviterPrivKeyY: privKeyY,
+      timestamp: Date.now(),
       message,
     });
 

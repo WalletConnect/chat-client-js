@@ -31,11 +31,12 @@ export const ZSentInvite = z.object({
   message: z.string().max(200),
   inviterAccount: ZAccount,
   inviteeAccount: ZAccount,
+  timestamp: z.number(),
+  responseTopic: z.string().max(80),
+  status: ZInviteStatus,
   inviterPubKeyY: z.string(),
   inviterPrivKeyY: z.string(),
-  responseTopic: z.string().max(80),
   symKey: z.string(),
-  status: ZInviteStatus,
 });
 
 export const ZReceivedInvite = z.object({
