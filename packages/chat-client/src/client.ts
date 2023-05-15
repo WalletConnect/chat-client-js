@@ -296,17 +296,21 @@ export class ChatClient extends IChatClient {
           invite.inviterPrivKeyY
         );
 
-        // Accepting an invite will trigger a call for `core.history.resolve`. Create fake history entry so that sync peer can handle
-        // accepting the invite
-        this.core.history.set(invite.responseTopic, {
-          id: invite.id,
-          jsonrpc: "2.0",
-          method: "chat_invite",
-          params: {},
-        });
-
-        this.core.crypto.setSymKey(invite.symKey, invite.responseTopic);
-        this.core.relayer.subscribe(invite.responseTopic);
+        try {
+          // Accepting an invite will trigger a call for `core.history.resolve`. Create fake history entry so that sync peer can handle
+          // accepting the invite
+          this.core.history.set(invite.responseTopic, {
+            id: invite.id,
+            jsonrpc: "2.0",
+            method: "chat_invite",
+            params: {},
+          });
+          this.core.crypto.setSymKey(invite.symKey, invite.responseTopic);
+          this.core.relayer.subscribe(invite.responseTopic);
+        } catch (e) {
+          console.error(e);
+          this.logger.error(e, "Failed to init history for invite");
+        }
       }
     );
 
