@@ -19,6 +19,7 @@ import {
   getRelayProtocolName,
   getSdkError,
   hashKey,
+  hashMessage,
 } from "@walletconnect/utils";
 
 import {
@@ -92,9 +93,9 @@ export class ChatEngine extends IChatEngine {
     const pubKeyHex = await this.client.core.crypto.generateKeyPair();
     const privKeyHex = this.client.core.crypto.keychain.get(pubKeyHex);
     await this.client.chatKeys.set(accountId, {
-      accountId,
-      inviteKeyPriv: privKeyHex,
-      inviteKeyPub: pubKeyHex,
+      account: accountId,
+      publicKey: pubKeyHex,
+      privateKey: privKeyHex,
     });
     return pubKeyHex;
   };
@@ -108,41 +109,43 @@ export class ChatEngine extends IChatEngine {
   private registerInvite = async (accountId: string, priv = false) => {
     try {
       const storedKeyPair = this.client.chatKeys.get(accountId);
-      if (storedKeyPair.inviteKeyPub) return storedKeyPair.inviteKeyPub;
+      if (storedKeyPair.publicKey) return storedKeyPair.publicKey;
 
       throw new Error("Invite key not registered");
     } catch {
       const pubKeyHex = await this.generateAndStoreInviteKey(accountId);
 
-      const identityKeyPub = await this.client.identityKeys.getIdentity({
-        account: accountId,
-      });
-
-      console.table({ identityKeyPub: encodeEd25519Key(identityKeyPub) });
-
-      const issuedAt = Math.round(Date.now() / 1000);
-      const expiration = jwtExp(issuedAt);
-      const didPublicKey = composeDidPkh(accountId);
-      const payload = {
-        iss: encodeEd25519Key(identityKeyPub),
-        sub: encodeX25519Key(pubKeyHex),
-        aud: this.keyserverUrl,
-        act: "register_invite",
-        iat: issuedAt,
-        exp: expiration,
-        pkh: didPublicKey,
-      };
-
-      const idAuth = await this.generateIdAuth(accountId, payload);
-
-      if (!priv) {
-        const url = `${this.keyserverUrl}/invite`;
-        await axios
-          .post(url, { idAuth })
-          .catch((e) => console.error(e.toJSON()));
-      }
-
+      await this.registerInviteOnKeyserver(accountId, pubKeyHex, priv);
       return pubKeyHex;
+    }
+  };
+
+  private registerInviteOnKeyserver = async (
+    accountId: string,
+    pubKeyHex: string,
+    priv: boolean
+  ) => {
+    const identityKeyPub = await this.client.identityKeys.getIdentity({
+      account: accountId,
+    });
+    const issuedAt = Math.round(Date.now() / 1000);
+    const expiration = jwtExp(issuedAt);
+    const didPublicKey = composeDidPkh(accountId);
+    const payload = {
+      iss: encodeEd25519Key(identityKeyPub),
+      sub: encodeX25519Key(pubKeyHex),
+      aud: this.keyserverUrl,
+      act: "register_invite",
+      iat: issuedAt,
+      exp: expiration,
+      pkh: didPublicKey,
+    };
+
+    const idAuth = await this.generateIdAuth(accountId, payload);
+
+    if (!priv) {
+      const url = `${this.keyserverUrl}/invite`;
+      await axios.post(url, { idAuth }).catch((e) => console.error(e.toJSON()));
     }
   };
 
@@ -156,7 +159,7 @@ export class ChatEngine extends IChatEngine {
   };
 
   private unregisterInvite = async (accountId: string) => {
-    const { inviteKeyPub } = this.client.chatKeys.get(accountId);
+    const { publicKey } = this.client.chatKeys.get(accountId);
 
     const identityKeyPub = await this.client.identityKeys.getIdentity({
       account: accountId,
@@ -167,7 +170,7 @@ export class ChatEngine extends IChatEngine {
     const didPublicKey = composeDidPkh(accountId);
     const payload = {
       iss: encodeEd25519Key(identityKeyPub),
-      sub: encodeX25519Key(inviteKeyPub),
+      sub: encodeX25519Key(publicKey),
       aud: this.keyserverUrl,
       iat: issuedAt,
       exp: expiration,
@@ -187,11 +190,8 @@ export class ChatEngine extends IChatEngine {
     ZAccount.parse(account);
 
     const identityKey = await this.registerIdentity(account, onSign);
-    await this.registerInvite(account, false);
 
     this.currentAccount = account;
-
-    await this.subscribeToSelfInviteTopic();
 
     if (this.client.syncClient) {
       if (this.client.syncClient.signatures.keys.includes(account)) {
@@ -202,6 +202,7 @@ export class ChatEngine extends IChatEngine {
           account,
         });
         const signedSyncMessage = await onSign(syncMessage);
+        console.log("Registering sync", account, signedSyncMessage);
         await this.client.syncClient.register({
           account,
           signature: signedSyncMessage,
@@ -212,6 +213,9 @@ export class ChatEngine extends IChatEngine {
         });
       }
     }
+
+    await this.registerInvite(account, false);
+    await this.subscribeToSelfInviteTopic();
 
     return identityKey;
   };
@@ -346,13 +350,13 @@ export class ChatEngine extends IChatEngine {
     });
     console.log(
       "accept > this.client.chatKeys.get('invitePublicKey'): ",
-      keys.inviteKeyPub
+      keys.publicKey
     );
 
     const decodedInvitePubKey = invite.inviterPublicKey;
 
     const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
-      keys.inviteKeyPub,
+      keys.publicKey,
       decodedInvitePubKey
     );
     const symKeyI = this.client.core.crypto.keychain.get(topicSymKeyI);
@@ -436,10 +440,10 @@ export class ChatEngine extends IChatEngine {
     }
 
     const invite = this.client.chatReceivedInvites.get(id.toString());
-    const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
+    const { publicKey } = this.client.chatKeys.get(this.currentAccount);
 
     const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
-      inviteKeyPub,
+      publicKey,
       invite.inviterPublicKey
     );
     const symKeyI = this.client.core.crypto.keychain.get(topicSymKeyI);
@@ -571,16 +575,18 @@ export class ChatEngine extends IChatEngine {
     await this.client.core.history.resolve(payload);
   };
 
-  protected subscribeToSelfInviteTopic = async () => {
-    if (!this.currentAccount) {
+  public subscribeToSelfInviteTopic = async (account?: string) => {
+    if (!account && !this.currentAccount) {
       throw new Error("No account registered");
     }
 
-    const { inviteKeyPub } = this.client.chatKeys.get(this.currentAccount);
+    const { publicKey } = this.client.chatKeys.get(
+      account ?? this.currentAccount
+    );
 
-    console.log(">>>>>>>>> selfInvitePublicKey:", inviteKeyPub);
+    console.log(">>>>>>>>> selfInvitePublicKey:", publicKey);
 
-    const selfInviteTopic = hashKey(inviteKeyPub);
+    const selfInviteTopic = hashKey(publicKey);
     console.log(">>>>>>>>> selfInviteTopic:", selfInviteTopic);
     await this.client.core.relayer.subscribe(selfInviteTopic);
   };
@@ -618,7 +624,7 @@ export class ChatEngine extends IChatEngine {
         const selfKeys = this.client.chatKeys.get(this.currentAccount);
 
         const payload = await this.client.core.crypto.decode(topic, message, {
-          receiverPublicKey: selfKeys.inviteKeyPub,
+          receiverPublicKey: selfKeys.publicKey,
         });
 
         if (isJsonRpcRequest(payload)) {
@@ -692,7 +698,7 @@ export class ChatEngine extends IChatEngine {
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
 
-      const { inviteKeyPub } = this.client.chatKeys.get(
+      const { publicKey } = this.client.chatKeys.get(
         decodedPayload.aud.split(":").slice(2).join(":")
       );
 
@@ -710,7 +716,7 @@ export class ChatEngine extends IChatEngine {
           .split(":")
           .slice(2)
           .join(":"),
-        inviteePublicKey: inviteKeyPub,
+        inviteePublicKey: publicKey,
         inviterPublicKey: ed25519.utils.bytesToHex(
           decodeX25519Key(decodedPayload.pke)
         ),
@@ -821,6 +827,7 @@ export class ChatEngine extends IChatEngine {
     payload
   ) => {
     const { params, id } = payload;
+    const { selfAccount, peerAccount } = this.client.chatThreads.get(topic);
     try {
       const decodedPayload = jwt.decode(params.messageAuth, {
         json: true,
@@ -831,6 +838,7 @@ export class ChatEngine extends IChatEngine {
       });
 
       const authorAccount = cacao.p.iss.split(":").slice(2).join(":");
+      const receipientAccount = cacao.p.aud.split(":").slice(2).join(":");
       const chainId = authorAccount.split(":")[1];
 
       const cacaoAuthor = cacao.p.iss;
@@ -856,9 +864,42 @@ export class ChatEngine extends IChatEngine {
         timestamp: new Date(decodedPayload.iat).getTime(),
       };
 
+      const identityKeyPub = await this.client.identityKeys.getIdentity({
+        account: selfAccount,
+      });
+
+      const iat = Date.now();
+      const receiptKeyClaims = {
+        iat,
+        exp: jwtExp(iat),
+        iss: encodeEd25519Key(identityKeyPub),
+        sub: hashMessage(message.message),
+        ksu: this.keyserverUrl,
+        aud: composeDidPkh(message.authorAccount),
+        act: "chat_receipt",
+      };
+
       this.setMessage(topic, message);
-      await this.sendResult<"wc_chatMessage">(payload.id, topic, true);
       this.client.emit("chat_message", { id, topic, params: message });
+
+      // If the author is a registered account,
+      // and the peer is not, then there is no reason to respond to the message
+      if (authorAccount === selfAccount) {
+        try {
+          await this.client.identityKeys.getIdentity({
+            account: receipientAccount,
+          });
+        } catch (e) {
+          return;
+        }
+      }
+
+      await this.sendResult<"wc_chatMessage">(payload.id, topic, {
+        receiptAuth: await this.generateIdAuth(
+          this.currentAccount,
+          receiptKeyClaims
+        ),
+      });
     } catch (err: any) {
       await this.sendError(id, topic, err);
       this.client.logger.error(err);

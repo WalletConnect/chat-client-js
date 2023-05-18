@@ -1,1 +1,1 @@
-export const CHAT_THREADS_CONTEXT = "chat_threads";
+export const CHAT_THREADS_CONTEXT = "com.walletconnect.chat.threads";

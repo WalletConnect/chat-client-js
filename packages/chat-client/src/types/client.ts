@@ -129,9 +129,9 @@ export declare namespace ChatClientTypes {
 }
 
 export interface InviteKeychain {
-  accountId: string;
-  inviteKeyPub: string;
-  inviteKeyPriv: string;
+  account: string;
+  publicKey: string;
+  privateKey: string;
 }
 
 export abstract class IChatClient {

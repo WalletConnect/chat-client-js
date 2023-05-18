@@ -21,6 +21,7 @@ import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient, InviteKeychain } from "./types";
 import { ISyncClient, SyncClient, SyncStore } from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
+import { hashKey } from "@walletconnect/utils";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
@@ -96,7 +97,7 @@ export class ChatClient extends IChatClient {
       this.logger,
       CHAT_KEYS_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX,
-      (keys: InviteKeychain) => keys.accountId
+      (keys: InviteKeychain) => keys.account
     );
     this.chatContacts = new Store(
       this.core,
@@ -275,6 +276,26 @@ export class ChatClient extends IChatClient {
   }) => {
     if (!this.syncClient) return;
 
+    this.chatKeys = new SyncStore(
+      CHAT_KEYS_CONTEXT,
+      this.syncClient,
+      account,
+      signature,
+      (_, newKeyChain) => {
+        if (!newKeyChain) return;
+
+        this.core.crypto.keychain.set(
+          newKeyChain.publicKey,
+          newKeyChain.privateKey
+        );
+
+        const inviteTopic = hashKey(newKeyChain.publicKey);
+        if (!this.core.relayer.subscriber.topics.includes(inviteTopic)) {
+          this.core.relayer.subscribe(inviteTopic);
+        }
+      }
+    );
+
     this.chatSentInvites = new SyncStore(
       CHAT_SENT_INVITES_CONTEXT,
       this.syncClient,
@@ -338,6 +359,7 @@ export class ChatClient extends IChatClient {
 
     await this.chatSentInvites.init();
     await this.chatThreads.init();
+    await this.chatKeys.init();
   };
 
   // ---------- Private ----------------------------------------------- //
