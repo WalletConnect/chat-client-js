@@ -15,6 +15,7 @@ import {
   CHAT_SENT_INVITES_CONTEXT,
   CHAT_KEYS_CONTEXT,
   KEYSERVER_URL,
+  CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
 } from "./constants";
 
 import { ChatEngine } from "./controllers";
@@ -35,6 +36,7 @@ export class ChatClient extends IChatClient {
   public logger: IChatClient["logger"];
   public chatSentInvites: IChatClient["chatSentInvites"];
   public chatReceivedInvites: IChatClient["chatReceivedInvites"];
+  public chatReceivedInvitesStatus: IChatClient["chatReceivedInvitesStatus"];
   public chatThreads: IChatClient["chatThreads"];
   public chatMessages: IChatClient["chatMessages"];
   public chatContacts: IChatClient["chatContacts"];
@@ -103,6 +105,12 @@ export class ChatClient extends IChatClient {
       this.core,
       this.logger,
       CHAT_CONTACTS_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX
+    );
+    this.chatReceivedInvitesStatus = new Store(
+      this.core,
+      this.logger,
+      CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX
     );
     this.identityKeys = new IdentityKeys(this.core);
@@ -293,6 +301,20 @@ export class ChatClient extends IChatClient {
         if (!this.core.relayer.subscriber.topics.includes(inviteTopic)) {
           this.core.relayer.subscribe(inviteTopic);
         }
+      }
+    );
+
+    this.chatReceivedInvitesStatus = new SyncStore(
+      CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
+      this.syncClient,
+      account,
+      signature,
+      (_, invite) => {
+        if (!invite) return;
+
+        this.chatReceivedInvites.update(invite.id, {
+          status: invite.status,
+        });
       }
     );
 

@@ -429,6 +429,11 @@ export class ChatEngine extends IChatEngine {
       status: "approved",
     });
 
+    await this.client.chatReceivedInvitesStatus.set(id.toString(), {
+      id,
+      status: "approved",
+    });
+
     console.log("accept > chatInvites.delete:", id);
 
     return chatThreadTopic;
@@ -454,6 +459,11 @@ export class ChatEngine extends IChatEngine {
     await this.sendError(id, responseTopic, getSdkError("USER_REJECTED"));
 
     await this.client.chatReceivedInvites.update(id.toString(), {
+      status: "rejected",
+    });
+
+    await this.client.chatReceivedInvitesStatus.set(id.toString(), {
+      id,
       status: "rejected",
     });
 
