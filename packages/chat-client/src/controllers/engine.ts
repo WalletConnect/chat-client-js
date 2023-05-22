@@ -900,6 +900,9 @@ export class ChatEngine extends IChatEngine {
             account: receipientAccount,
           });
         } catch (e) {
+          this.client.logger.info(
+            "Peer is not registered and the author is the selfAccount in this thread, not responding to message"
+          );
           return;
         }
       }
