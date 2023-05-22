@@ -73,10 +73,10 @@ describe("ChatClient", () => {
     );
     const peerKeys = peer.chatKeys.get(composeChainAddress(walletPeer.address));
 
-    expect(selfKeys.inviteKeyPub.length).toBeGreaterThan(0);
-    expect(selfKeys.inviteKeyPriv.length).toBeGreaterThan(0);
-    expect(peerKeys.inviteKeyPub.length).toBeGreaterThan(0);
-    expect(peerKeys.inviteKeyPriv.length).toBeGreaterThan(0);
+    expect(selfKeys.privateKey.length).toBeGreaterThan(0);
+    expect(selfKeys.publicKey.length).toBeGreaterThan(0);
+    expect(peerKeys.privateKey.length).toBeGreaterThan(0);
+    expect(peerKeys.publicKey.length).toBeGreaterThan(0);
   });
 
   it("can resolve an account on the keyserver", async () => {

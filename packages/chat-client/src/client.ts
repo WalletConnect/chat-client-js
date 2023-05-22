@@ -312,7 +312,7 @@ export class ChatClient extends IChatClient {
       (_, invite) => {
         if (!invite) return;
 
-        this.chatReceivedInvites.update(invite.id, {
+        this.chatReceivedInvites.update(invite.id.toString(), {
           status: invite.status,
         });
       }
@@ -380,6 +380,7 @@ export class ChatClient extends IChatClient {
     );
 
     await this.chatSentInvites.init();
+    await this.chatReceivedInvitesStatus.init();
     await this.chatThreads.init();
     await this.chatKeys.init();
   };
@@ -408,6 +409,7 @@ export class ChatClient extends IChatClient {
       await this.core.start();
       await this.chatMessages.init();
       await this.chatReceivedInvites.init();
+      await this.chatReceivedInvitesStatus.init();
       await this.chatKeys.init();
       await this.chatContacts.init();
       await this.identityKeys.init();

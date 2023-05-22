@@ -598,7 +598,10 @@ export class ChatEngine extends IChatEngine {
 
     const selfInviteTopic = hashKey(publicKey);
     console.log(">>>>>>>>> selfInviteTopic:", selfInviteTopic);
-    await this.client.core.relayer.subscribe(selfInviteTopic);
+
+    if (!this.client.core.relayer.subscriber.topics.includes(selfInviteTopic)) {
+      await this.client.core.relayer.subscribe(selfInviteTopic);
+    }
   };
 
   protected setMessage: IChatEngine["setMessage"] = async (topic, item) => {
@@ -708,6 +711,12 @@ export class ChatEngine extends IChatEngine {
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
 
+      if (decodedPayload.act !== "invite_proposal") {
+        this.client.logger.error(
+          "Incoming message jwt payload's act is not invite_proposal"
+        );
+      }
+
       const { publicKey } = this.client.chatKeys.get(
         decodedPayload.aud.split(":").slice(2).join(":")
       );
@@ -760,6 +769,12 @@ export class ChatEngine extends IChatEngine {
       }) as Record<string, string>;
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
+
+      if (decodedPayload.act !== "invite_approval") {
+        this.client.logger.error(
+          "Incoming message jwt payload's act is not invite_approval"
+        );
+      }
 
       const topicSymKeyT = await this.client.core.crypto.generateSharedKey(
         pubkeyY,
@@ -842,6 +857,13 @@ export class ChatEngine extends IChatEngine {
       const decodedPayload = jwt.decode(params.messageAuth, {
         json: true,
       }) as Record<string, string>;
+
+      if (decodedPayload.act !== "chat_message") {
+        this.client.logger.error(
+          "Incoming message jwt payload's act is not chat_message"
+        );
+        return;
+      }
 
       const cacao = await this.resolveIdentity({
         publicKey: decodedPayload.iss,
