@@ -54,7 +54,7 @@
     "@typescript-eslint/eslint-plugin": "^5.16.0",
     "@typescript-eslint/parser": "^5.16.0",
     "@walletconnect/jsonrpc-types": "^1.0.2",
-    "@walletconnect/sync-client": "^0.3.3",
+    "@walletconnect/sync-client": "^0.3.4",
     "@walletconnect/types": "^2.7.5",
     "aws-sdk": "^2.1169.0",
     "eslint": "^8.11.0",
