@@ -3,7 +3,7 @@ import EventEmitter from "events";
 import { Logger } from "@walletconnect/logger";
 import { IChatEngine } from "./engine";
 import { z } from "zod";
-import { ISyncClient } from "@walletconnect/sync-client";
+import { ISyncClient, SyncStore } from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
 
 export const ZAccount = z.string().regex(/.*:.*:.*/, {
@@ -86,6 +86,8 @@ export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
     core?: ICore;
     keyserverUrl?: string;
+    syncClient: ISyncClient;
+    SyncStoreController: typeof SyncStore;
     projectId: string;
   }
 

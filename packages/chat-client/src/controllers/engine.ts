@@ -544,8 +544,8 @@ export class ChatEngine extends IChatEngine {
     const payload = formatJsonRpcRequest(method, params);
     const message = await this.client.core.crypto.encode(topic, payload, opts);
     const rpcOpts = ENGINE_RPC_OPTS[method].req;
-    await this.client.core.relayer.publish(topic, message, rpcOpts);
     this.client.core.history.set(topic, payload);
+    await this.client.core.relayer.publish(topic, message, rpcOpts);
 
     return payload.id;
   };
@@ -847,7 +847,7 @@ export class ChatEngine extends IChatEngine {
     payload
   ) => {
     const { params, id } = payload;
-    const { selfAccount, peerAccount } = this.client.chatThreads.get(topic);
+    const { selfAccount } = this.client.chatThreads.get(topic);
     try {
       const decodedPayload = jwt.decode(params.messageAuth, {
         json: true,

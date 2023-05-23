@@ -20,7 +20,10 @@ import {
 
 import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient, InviteKeychain } from "./types";
-import { ISyncClient, SyncClient, SyncStore } from "@walletconnect/sync-client";
+import type {
+  ISyncClient,
+  SyncStore as TSyncStore,
+} from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
 import { hashKey } from "@walletconnect/utils";
 
@@ -43,6 +46,7 @@ export class ChatClient extends IChatClient {
   public chatKeys: IChatClient["chatKeys"];
   public identityKeys: IChatClient["identityKeys"];
   public engine: IChatClient["engine"];
+  private SyncStoreController: typeof TSyncStore;
 
   static async init(opts: ChatClientTypes.Options) {
     const client = new ChatClient(opts);
@@ -55,6 +59,10 @@ export class ChatClient extends IChatClient {
     super(opts);
 
     this.projectId = opts.projectId;
+
+    this.syncClient = opts.syncClient;
+
+    this.SyncStoreController = opts.SyncStoreController;
 
     const logger =
       typeof opts?.logger !== "undefined" && typeof opts?.logger !== "string"
@@ -284,7 +292,7 @@ export class ChatClient extends IChatClient {
   }) => {
     if (!this.syncClient) return;
 
-    this.chatKeys = new SyncStore(
+    this.chatKeys = new this.SyncStoreController(
       CHAT_KEYS_CONTEXT,
       this.syncClient,
       account,
@@ -304,7 +312,7 @@ export class ChatClient extends IChatClient {
       }
     );
 
-    this.chatReceivedInvitesStatus = new SyncStore(
+    this.chatReceivedInvitesStatus = new this.SyncStoreController(
       CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
       this.syncClient,
       account,
@@ -318,7 +326,7 @@ export class ChatClient extends IChatClient {
       }
     );
 
-    this.chatSentInvites = new SyncStore(
+    this.chatSentInvites = new this.SyncStoreController(
       CHAT_SENT_INVITES_CONTEXT,
       this.syncClient,
       account,
@@ -352,7 +360,7 @@ export class ChatClient extends IChatClient {
       }
     );
 
-    this.chatThreads = new SyncStore(
+    this.chatThreads = new this.SyncStoreController(
       CHAT_THREADS_CONTEXT,
       this.syncClient,
       account,
@@ -390,11 +398,6 @@ export class ChatClient extends IChatClient {
   private async initialize() {
     this.logger.trace(`Initialized`);
     try {
-      this.syncClient = await SyncClient.init({
-        core: this.core,
-        logger: this.logger,
-      });
-
       // Use active account to init stores
       if (this.syncClient && this.syncClient.signatures.length > 0) {
         const signatureEntry = this.syncClient.signatures.getAll({
