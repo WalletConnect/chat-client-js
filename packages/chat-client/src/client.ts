@@ -15,12 +15,17 @@ import {
   CHAT_SENT_INVITES_CONTEXT,
   CHAT_KEYS_CONTEXT,
   KEYSERVER_URL,
+  CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
 } from "./constants";
 
 import { ChatEngine } from "./controllers";
 import { ChatClientTypes, IChatClient, InviteKeychain } from "./types";
-import { ISyncClient, SyncClient, SyncStore } from "@walletconnect/sync-client";
+import type {
+  ISyncClient,
+  SyncStore as TSyncStore,
+} from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
+import { hashKey } from "@walletconnect/utils";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
@@ -34,12 +39,14 @@ export class ChatClient extends IChatClient {
   public logger: IChatClient["logger"];
   public chatSentInvites: IChatClient["chatSentInvites"];
   public chatReceivedInvites: IChatClient["chatReceivedInvites"];
+  public chatReceivedInvitesStatus: IChatClient["chatReceivedInvitesStatus"];
   public chatThreads: IChatClient["chatThreads"];
   public chatMessages: IChatClient["chatMessages"];
   public chatContacts: IChatClient["chatContacts"];
   public chatKeys: IChatClient["chatKeys"];
   public identityKeys: IChatClient["identityKeys"];
   public engine: IChatClient["engine"];
+  private SyncStoreController: typeof TSyncStore;
 
   static async init(opts: ChatClientTypes.Options) {
     const client = new ChatClient(opts);
@@ -52,6 +59,10 @@ export class ChatClient extends IChatClient {
     super(opts);
 
     this.projectId = opts.projectId;
+
+    this.syncClient = opts.syncClient;
+
+    this.SyncStoreController = opts.SyncStoreController;
 
     const logger =
       typeof opts?.logger !== "undefined" && typeof opts?.logger !== "string"
@@ -96,12 +107,18 @@ export class ChatClient extends IChatClient {
       this.logger,
       CHAT_KEYS_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX,
-      (keys: InviteKeychain) => keys.accountId
+      (keys: InviteKeychain) => keys.account
     );
     this.chatContacts = new Store(
       this.core,
       this.logger,
       CHAT_CONTACTS_CONTEXT,
+      CHAT_CLIENT_STORAGE_PREFIX
+    );
+    this.chatReceivedInvitesStatus = new Store(
+      this.core,
+      this.logger,
+      CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX
     );
     this.identityKeys = new IdentityKeys(this.core);
@@ -275,7 +292,41 @@ export class ChatClient extends IChatClient {
   }) => {
     if (!this.syncClient) return;
 
-    this.chatSentInvites = new SyncStore(
+    this.chatKeys = new this.SyncStoreController(
+      CHAT_KEYS_CONTEXT,
+      this.syncClient,
+      account,
+      signature,
+      (_, newKeyChain) => {
+        if (!newKeyChain) return;
+
+        this.core.crypto.keychain.set(
+          newKeyChain.publicKey,
+          newKeyChain.privateKey
+        );
+
+        const inviteTopic = hashKey(newKeyChain.publicKey);
+        if (!this.core.relayer.subscriber.topics.includes(inviteTopic)) {
+          this.core.relayer.subscribe(inviteTopic);
+        }
+      }
+    );
+
+    this.chatReceivedInvitesStatus = new this.SyncStoreController(
+      CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
+      this.syncClient,
+      account,
+      signature,
+      (_, invite) => {
+        if (!invite) return;
+
+        this.chatReceivedInvites.update(invite.id.toString(), {
+          status: invite.status,
+        });
+      }
+    );
+
+    this.chatSentInvites = new this.SyncStoreController(
       CHAT_SENT_INVITES_CONTEXT,
       this.syncClient,
       account,
@@ -309,7 +360,7 @@ export class ChatClient extends IChatClient {
       }
     );
 
-    this.chatThreads = new SyncStore(
+    this.chatThreads = new this.SyncStoreController(
       CHAT_THREADS_CONTEXT,
       this.syncClient,
       account,
@@ -337,7 +388,9 @@ export class ChatClient extends IChatClient {
     );
 
     await this.chatSentInvites.init();
+    await this.chatReceivedInvitesStatus.init();
     await this.chatThreads.init();
+    await this.chatKeys.init();
   };
 
   // ---------- Private ----------------------------------------------- //
@@ -345,11 +398,6 @@ export class ChatClient extends IChatClient {
   private async initialize() {
     this.logger.trace(`Initialized`);
     try {
-      this.syncClient = await SyncClient.init({
-        core: this.core,
-        logger: this.logger,
-      });
-
       // Use active account to init stores
       if (this.syncClient && this.syncClient.signatures.length > 0) {
         const signatureEntry = this.syncClient.signatures.getAll({
@@ -364,6 +412,7 @@ export class ChatClient extends IChatClient {
       await this.core.start();
       await this.chatMessages.init();
       await this.chatReceivedInvites.init();
+      await this.chatReceivedInvitesStatus.init();
       await this.chatKeys.init();
       await this.chatContacts.init();
       await this.identityKeys.init();

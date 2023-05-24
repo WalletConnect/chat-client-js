@@ -4,6 +4,8 @@ import { generateRandomBytes32 } from "@walletconnect/utils";
 import ChatClient from "../../src";
 import { ChatClientTypes } from "../../src/types";
 import { disconnectSocket } from "../helpers/ws";
+import { SyncClient, SyncStore } from "@walletconnect/sync-client";
+import { Core } from "@walletconnect/core";
 
 if (!process.env.TEST_PROJECT_ID) {
   throw new ReferenceError("TEST_PROJECT_ID env var not set");
@@ -37,9 +39,31 @@ describe("ChatClient", () => {
   let peer: ChatClient;
 
   beforeEach(async () => {
-    client = await ChatClient.init(opts);
+    const core = new Core({ projectId: opts.projectId });
+    const syncClient = await SyncClient.init({
+      projectId: opts.projectId,
+      core,
+    });
 
-    peer = await ChatClient.init(opts);
+    const core2 = new Core({ projectId: opts.projectId });
+    const syncClient2 = await SyncClient.init({
+      projectId: opts.projectId,
+      core,
+    });
+
+    client = await ChatClient.init({
+      ...opts,
+      core,
+      syncClient,
+      SyncStoreController: SyncStore,
+    });
+
+    peer = await ChatClient.init({
+      ...opts,
+      core: core2,
+      syncClient: syncClient2,
+      SyncStoreController: SyncStore,
+    });
   });
 
   afterEach(async () => {
@@ -73,10 +97,10 @@ describe("ChatClient", () => {
     );
     const peerKeys = peer.chatKeys.get(composeChainAddress(walletPeer.address));
 
-    expect(selfKeys.inviteKeyPub.length).toBeGreaterThan(0);
-    expect(selfKeys.inviteKeyPriv.length).toBeGreaterThan(0);
-    expect(peerKeys.inviteKeyPub.length).toBeGreaterThan(0);
-    expect(peerKeys.inviteKeyPriv.length).toBeGreaterThan(0);
+    expect(selfKeys.privateKey.length).toBeGreaterThan(0);
+    expect(selfKeys.publicKey.length).toBeGreaterThan(0);
+    expect(peerKeys.privateKey.length).toBeGreaterThan(0);
+    expect(peerKeys.publicKey.length).toBeGreaterThan(0);
   });
 
   it("can resolve an account on the keyserver", async () => {
@@ -577,7 +601,17 @@ describe("ChatClient", () => {
 
   describe("Sync capability", () => {
     it("Can sync sentInvites", async () => {
-      const clientSyncPeer = await ChatClient.init(opts);
+      const core = new Core({ projectId: opts.projectId });
+      const syncClient = await SyncClient.init({
+        projectId: opts.projectId,
+        core,
+      });
+      const clientSyncPeer = await ChatClient.init({
+        ...opts,
+        core,
+        syncClient,
+        SyncStoreController: SyncStore,
+      });
       const walletSelf = Wallet.createRandom();
       const walletPeer = Wallet.createRandom();
 
@@ -649,7 +683,17 @@ describe("ChatClient", () => {
       expect(inviteId).toBeDefined();
     });
     it("Can sync threads and message", async () => {
-      const clientSyncPeer = await ChatClient.init(opts);
+      const core = new Core({ projectId: opts.projectId });
+      const syncClient = await SyncClient.init({
+        projectId: opts.projectId,
+        core,
+      });
+      const clientSyncPeer = await ChatClient.init({
+        ...opts,
+        core,
+        syncClient,
+        SyncStoreController: SyncStore,
+      });
       const walletSelf = Wallet.createRandom();
       const walletPeer = Wallet.createRandom();
 

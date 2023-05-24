@@ -28,7 +28,7 @@ export declare namespace JsonRpcTypes {
   // -- responses -------------------------------------------------- //
   interface Results {
     wc_chatInvite: { responseAuth: string };
-    wc_chatMessage: true;
+    wc_chatMessage: { receiptAuth: string };
     wc_chatPing: true;
     wc_chatLeave: true;
   }

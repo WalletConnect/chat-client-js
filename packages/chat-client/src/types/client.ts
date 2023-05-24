@@ -3,7 +3,7 @@ import EventEmitter from "events";
 import { Logger } from "@walletconnect/logger";
 import { IChatEngine } from "./engine";
 import { z } from "zod";
-import { ISyncClient } from "@walletconnect/sync-client";
+import { ISyncClient, SyncStore } from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
 
 export const ZAccount = z.string().regex(/.*:.*:.*/, {
@@ -50,6 +50,11 @@ export const ZReceivedInvite = z.object({
   inviteePublicKey: ZPublicKey,
 });
 
+export const ZReceivedInviteStatus = z.object({
+  id: z.number(),
+  status: ZInviteStatus,
+});
+
 export const ZMessage = z.object({
   topic: z.string().max(80),
   message: z.string().max(2000),
@@ -81,6 +86,8 @@ export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
     core?: ICore;
     keyserverUrl?: string;
+    syncClient: ISyncClient;
+    SyncStoreController: typeof SyncStore;
     projectId: string;
   }
 
@@ -91,6 +98,8 @@ export declare namespace ChatClientTypes {
   type SentInvite = z.infer<typeof ZSentInvite>;
 
   type ReceivedInvite = z.infer<typeof ZReceivedInvite>;
+
+  type ReceivedInviteStatus = z.infer<typeof ZReceivedInviteStatus>;
 
   type Media = z.infer<typeof ZMedia>;
 
@@ -129,9 +138,9 @@ export declare namespace ChatClientTypes {
 }
 
 export interface InviteKeychain {
-  accountId: string;
-  inviteKeyPub: string;
-  inviteKeyPriv: string;
+  account: string;
+  publicKey: string;
+  privateKey: string;
 }
 
 export abstract class IChatClient {
@@ -146,6 +155,10 @@ export abstract class IChatClient {
   public abstract chatReceivedInvites: IStore<
     string,
     ChatClientTypes.ReceivedInvite
+  >;
+  public abstract chatReceivedInvitesStatus: IStore<
+    string,
+    ChatClientTypes.ReceivedInviteStatus
   >;
   public abstract chatSentInvites: IStore<string, ChatClientTypes.SentInvite>;
   public abstract chatContacts: IStore<string, ChatClientTypes.Contact>;
