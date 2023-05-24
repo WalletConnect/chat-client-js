@@ -243,6 +243,13 @@ export class ChatEngine extends IChatEngine {
       .getAll()
       .some((thread) => thread.peerAccount === invite.inviteeAccount);
 
+    const peerInvitedSelf = this.client.chatReceivedInvites
+      .getAll()
+      .some(
+        (receivedInvite) =>
+          receivedInvite.inviterAccount === invite.inviteeAccount
+      );
+
     if (alreadyHasThread) {
       throw new Error(
         `Address ${invite.inviteeAccount} already has established thread`
@@ -251,6 +258,12 @@ export class ChatEngine extends IChatEngine {
 
     if (alreadyInvited) {
       throw new Error(`Address ${invite.inviteeAccount} already invited`);
+    }
+
+    if (peerInvitedSelf) {
+      throw new Error(
+        `Address ${invite.inviteeAccount} has already sent an invite`
+      );
     }
 
     // generate a keyPair Y to encrypt the invite with derived DH symKey I.
