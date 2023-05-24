@@ -723,6 +723,7 @@ export class ChatEngine extends IChatEngine {
         this.client.logger.error(
           "Incoming message jwt payload's act is not invite_proposal"
         );
+        return;
       }
 
       const { publicKey } = this.client.chatKeys.get(
@@ -782,6 +783,7 @@ export class ChatEngine extends IChatEngine {
         this.client.logger.error(
           "Incoming message jwt payload's act is not invite_approval"
         );
+        return;
       }
 
       const topicSymKeyT = await this.client.core.crypto.generateSharedKey(
