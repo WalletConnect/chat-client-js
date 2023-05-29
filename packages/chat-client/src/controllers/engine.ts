@@ -353,9 +353,7 @@ export class ChatEngine extends IChatEngine {
     if (!this.currentAccount) {
       throw new Error("No account registered");
     }
-    // NOTE: This is a very roundabout way to get back to symKey I by re-deriving,
-    // since crypto.decode doesn't expose it.
-    // Can we simplify this?
+
     const keys = this.client.chatKeys.get(invite.inviteeAccount);
 
     const identityKeyPub = await this.client.identityKeys.getIdentity({
