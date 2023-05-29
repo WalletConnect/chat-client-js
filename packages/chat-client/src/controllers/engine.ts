@@ -356,10 +356,10 @@ export class ChatEngine extends IChatEngine {
     // NOTE: This is a very roundabout way to get back to symKey I by re-deriving,
     // since crypto.decode doesn't expose it.
     // Can we simplify this?
-    const keys = this.client.chatKeys.get(this.currentAccount);
+    const keys = this.client.chatKeys.get(invite.inviteeAccount);
 
     const identityKeyPub = await this.client.identityKeys.getIdentity({
-      account: this.currentAccount,
+      account: invite.inviteeAccount,
     });
     console.log(
       "accept > this.client.chatKeys.get('invitePublicKey'): ",
@@ -404,7 +404,7 @@ export class ChatEngine extends IChatEngine {
     };
 
     const idAuth = await this.generateIdAuth(
-      this.currentAccount,
+      invite.inviteeAccount,
       inviteApprovalPayload
     );
 
@@ -420,7 +420,7 @@ export class ChatEngine extends IChatEngine {
 
     await this.client.chatThreads.set(chatThreadTopic, {
       topic: chatThreadTopic,
-      selfAccount: this.currentAccount,
+      selfAccount: invite.inviteeAccount,
       peerAccount: invite.inviterAccount,
       symKey: symKeyT,
     });
@@ -434,7 +434,7 @@ export class ChatEngine extends IChatEngine {
 
     console.log("accept > chatThreads.set:", chatThreadTopic, {
       topic: chatThreadTopic,
-      selfAccount: this.currentAccount,
+      selfAccount: invite.inviteeAccount,
       peerAccount: invite.inviterAccount,
     });
 
@@ -453,7 +453,7 @@ export class ChatEngine extends IChatEngine {
     }
 
     const invite = this.client.chatReceivedInvites.get(id.toString());
-    const { publicKey } = this.client.chatKeys.get(this.currentAccount);
+    const { publicKey } = this.client.chatKeys.get(invite.inviteeAccount);
 
     const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
       publicKey,
