@@ -829,7 +829,7 @@ export class ChatEngine extends IChatEngine {
 
       this.client.emit("chat_invite_accepted", {
         id: payload.id,
-        topic,
+        topic: chatThreadTopic,
         invite: this.client.chatSentInvites.get(topic),
       });
     } else if (isJsonRpcError(payload)) {

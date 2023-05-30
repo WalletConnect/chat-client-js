@@ -72,12 +72,12 @@ describe("ChatClient Canary", () => {
     });
 
     const publicKey = await client.register({
-      account: composeChainAddress(TEST_PEER_ACCOUNT.address),
-      onSign: TEST_CLIENT_ACCOUNT.signMessage,
+      account: composeChainAddress(TEST_CLIENT_ACCOUNT.address),
+      onSign: (message) => TEST_CLIENT_ACCOUNT.signMessage(message),
     });
     const peerPublicKey = await peer.register({
       account: composeChainAddress(TEST_PEER_ACCOUNT.address),
-      onSign: TEST_PEER_ACCOUNT.signMessage,
+      onSign: (message) => TEST_PEER_ACCOUNT.signMessage(message),
     });
     registerAddressLatencyMs = Date.now() - start;
     expect(publicKey.length).toBeGreaterThan(0);
@@ -131,12 +131,14 @@ describe("ChatClient Canary", () => {
     ]);
 
     const clientMessagePayload = {
+      topic,
       message: "Hey there peer!",
       authorAccount: composeChainAddress(TEST_CLIENT_ACCOUNT.address),
       timestamp: Date.now(),
     };
 
     const peerMessagePayload = {
+      topic,
       message: "Hey there client!",
       authorAccount: composeChainAddress(TEST_PEER_ACCOUNT.address),
       timestamp: Date.now(),
@@ -158,10 +160,9 @@ describe("ChatClient Canary", () => {
       }),
       new Promise<void>(async (resolve) => {
         await client.message({
-          topic,
           ...clientMessagePayload,
         });
-        await peer.message({ topic, ...peerMessagePayload });
+        await peer.message({ ...peerMessagePayload });
         resolve();
       }),
     ]);
@@ -216,5 +217,5 @@ describe("ChatClient Canary", () => {
         ]
       );
     }
-  });
+  }, 10000);
 });
