@@ -1,21 +1,39 @@
 /* eslint-disable no-async-promise-executor */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 import { expect, describe, it } from "vitest";
 import { uploadCanaryResultsToCloudWatch } from "../utils";
-
-import { ChatClient } from "./../../src";
+import { Wallet } from "@ethersproject/wallet";
+import ChatClient from "../../src";
 import { ChatClientTypes } from "./../../src/types";
 import { disconnectSocket } from "./../helpers/ws";
+import { SyncClient, SyncStore } from "@walletconnect/sync-client";
+import { Core } from "@walletconnect/core";
 
-const TEST_CLIENT_ACCOUNT =
-  "eip155:1:0xf07A0e1454771826472AE22A212575296f309c8C";
-const TEST_PEER_ACCOUNT = "eip155:1:0xb09a878797c4406085fA7108A3b84bbed3b5881F";
+const composeChainAddress = (address: string) => `eip155:1:${address}`;
+
+const TEST_CLIENT_ACCOUNT = Wallet.createRandom();
+const TEST_PEER_ACCOUNT = Wallet.createRandom();
 const environment = process.env.ENVIRONMENT || "dev";
 const region = process.env.REGION || "unknown";
 const TEST_RELAY_URL =
   process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com";
 const metricsPrefix = "HappyPath.chat";
+
+const projectId = process.env.TEST_PROJECT_ID;
+
+if (!projectId) {
+  throw new Error("TEST_PROJECT_ID needs to be supplied");
+}
+
+const opts = {
+  logger: "error",
+  relayUrl: process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com",
+  projectId,
+  keyserverUrl: "https://keys.walletconnect.com",
+  storageOptions: {
+    database: ":memory:",
+  },
+};
 
 describe("ChatClient Canary", () => {
   let registerAddressLatencyMs = 0;
@@ -27,39 +45,49 @@ describe("ChatClient Canary", () => {
 
   it("should register -> resolve -> send message -> leave chat", async () => {
     const start = Date.now();
+    const core = new Core({ projectId: opts.projectId });
+    const syncClient = await SyncClient.init({
+      projectId: opts.projectId,
+      core,
+    });
+
+    const core2 = new Core({ projectId: opts.projectId });
+    const syncClient2 = await SyncClient.init({
+      projectId: opts.projectId,
+      core: core2,
+    });
+
     const client = await ChatClient.init({
-      logger: "error",
-      relayUrl: process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com",
-      projectId: process.env.TEST_PROJECT_ID,
-      storageOptions: {
-        database: ":memory:",
-      },
+      ...opts,
+      core,
+      syncClient,
+      SyncStoreController: SyncStore,
     });
 
     const peer = await ChatClient.init({
-      logger: "error",
-      relayUrl: process.env.TEST_RELAY_URL || "wss://relay.walletconnect.com",
-      projectId: process.env.TEST_PROJECT_ID,
-      storageOptions: {
-        database: ":memory:",
-      },
+      ...opts,
+      syncClient: syncClient2,
+      SyncStoreController: SyncStore,
+      core: core2,
     });
 
     const publicKey = await client.register({
-      account: TEST_CLIENT_ACCOUNT,
+      account: composeChainAddress(TEST_CLIENT_ACCOUNT.address),
+      onSign: (message) => TEST_CLIENT_ACCOUNT.signMessage(message),
     });
     const peerPublicKey = await peer.register({
-      account: TEST_PEER_ACCOUNT,
+      account: composeChainAddress(TEST_PEER_ACCOUNT.address),
+      onSign: (message) => TEST_PEER_ACCOUNT.signMessage(message),
     });
     registerAddressLatencyMs = Date.now() - start;
     expect(publicKey.length).toBeGreaterThan(0);
     expect(peerPublicKey.length).toBeGreaterThan(0);
 
     const resolvedPublicKey = await peer.resolve({
-      account: TEST_CLIENT_ACCOUNT,
+      account: composeChainAddress(TEST_CLIENT_ACCOUNT.address),
     });
     const resolvedPeerPublicKey = await client.resolve({
-      account: TEST_PEER_ACCOUNT,
+      account: composeChainAddress(TEST_PEER_ACCOUNT.address),
     });
     resolveAddressLatencyMs = Date.now() - start;
     expect(resolvedPublicKey.length).toBeGreaterThan(0);
@@ -78,7 +106,7 @@ describe("ChatClient Canary", () => {
         });
       }),
       new Promise<void>((resolve) => {
-        client.on("chat_joined", async (args) => {
+        client.on("chat_invite_accepted", async (args) => {
           chatJoinedLatencyMs = Date.now() - start;
           topic = args.topic;
           expect(args.topic).toBeDefined();
@@ -86,28 +114,33 @@ describe("ChatClient Canary", () => {
         });
       }),
       new Promise<void>(async (resolve) => {
-        const invite: ChatClientTypes.PartialInvite = {
+        const invite: ChatClientTypes.Invite = {
           message: "hey let's chat",
-          account: TEST_CLIENT_ACCOUNT,
+          inviterAccount: composeChainAddress(TEST_CLIENT_ACCOUNT.address),
+          inviteeAccount: composeChainAddress(TEST_PEER_ACCOUNT.address),
+          inviteePublicKey: await client.resolve({
+            account: composeChainAddress(TEST_PEER_ACCOUNT.address),
+          }),
         };
 
         await client.invite({
-          account: TEST_PEER_ACCOUNT,
-          invite,
+          ...invite,
         });
         resolve();
       }),
     ]);
 
     const clientMessagePayload = {
+      topic,
       message: "Hey there peer!",
-      authorAccount: TEST_CLIENT_ACCOUNT,
+      authorAccount: composeChainAddress(TEST_CLIENT_ACCOUNT.address),
       timestamp: Date.now(),
     };
 
     const peerMessagePayload = {
+      topic,
       message: "Hey there client!",
-      authorAccount: TEST_PEER_ACCOUNT,
+      authorAccount: composeChainAddress(TEST_PEER_ACCOUNT.address),
       timestamp: Date.now(),
     };
 
@@ -126,8 +159,10 @@ describe("ChatClient Canary", () => {
         });
       }),
       new Promise<void>(async (resolve) => {
-        await client.message({ topic, payload: clientMessagePayload });
-        await peer.message({ topic, payload: peerMessagePayload });
+        await client.message({
+          ...clientMessagePayload,
+        });
+        await peer.message({ ...peerMessagePayload });
         resolve();
       }),
     ]);
@@ -182,5 +217,5 @@ describe("ChatClient Canary", () => {
         ]
       );
     }
-  });
+  }, 10000);
 });

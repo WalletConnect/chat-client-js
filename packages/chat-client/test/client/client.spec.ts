@@ -48,7 +48,7 @@ describe("ChatClient", () => {
     const core2 = new Core({ projectId: opts.projectId });
     const syncClient2 = await SyncClient.init({
       projectId: opts.projectId,
-      core,
+      core: core2,
     });
 
     client = await ChatClient.init({
