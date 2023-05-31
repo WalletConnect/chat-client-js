@@ -711,10 +711,10 @@ export class ChatEngine extends IChatEngine {
     try {
       const { id, params } = payload;
 
-      const decodedPayload = jwtDecode(params.inviteAuth) as Record<
-        string,
-        string
-      >;
+      const decodedPayload = jwtDecode(params.inviteAuth) as JwtPayload & {
+        aud: string;
+        pke: string;
+      };
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
 
@@ -772,10 +772,9 @@ export class ChatEngine extends IChatEngine {
   ) => {
     if (isJsonRpcResult(payload)) {
       const pubkeyY = this.client.core.crypto.keychain.get(`${topic}-pubkeyY`);
-      const decodedPayload = jwtDecode(payload.result.responseAuth) as Record<
-        string,
-        string
-      >;
+      const decodedPayload = jwtDecode(
+        payload.result.responseAuth
+      ) as JwtPayload;
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
 
@@ -864,10 +863,7 @@ export class ChatEngine extends IChatEngine {
     const { params, id } = payload;
     const { selfAccount } = this.client.chatThreads.get(topic);
     try {
-      const decodedPayload = jwtDecode(params.messageAuth) as Record<
-        string,
-        string
-      >;
+      const decodedPayload = jwtDecode(params.messageAuth) as JwtPayload;
 
       if (decodedPayload.act !== "chat_message") {
         this.client.logger.error(
