@@ -33,7 +33,7 @@ import {
 
 import axios from "axios";
 import EventEmitter from "events";
-import jwt from "jsonwebtoken";
+import jwtDecode from "jwt-decode";
 import { ENGINE_RPC_OPTS } from "../constants";
 import {
   ChatClientTypes,
@@ -715,9 +715,10 @@ export class ChatEngine extends IChatEngine {
     try {
       const { id, params } = payload;
 
-      const decodedPayload = jwt.decode(params.inviteAuth, {
-        json: true,
-      }) as Record<string, string>;
+      const decodedPayload = jwtDecode(params.inviteAuth) as JwtPayload & {
+        aud: string;
+        pke: string;
+      };
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
 
@@ -775,9 +776,9 @@ export class ChatEngine extends IChatEngine {
   ) => {
     if (isJsonRpcResult(payload)) {
       const pubkeyY = this.client.core.crypto.keychain.get(`${topic}-pubkeyY`);
-      const decodedPayload = jwt.decode(payload.result.responseAuth, {
-        json: true,
-      }) as Record<string, string>;
+      const decodedPayload = jwtDecode(
+        payload.result.responseAuth
+      ) as JwtPayload;
 
       if (!decodedPayload) throw new Error("Empty ID Auth payload");
 
@@ -872,9 +873,7 @@ export class ChatEngine extends IChatEngine {
     const { params, id } = payload;
     const { selfAccount } = this.client.chatThreads.get(topic);
     try {
-      const decodedPayload = jwt.decode(params.messageAuth, {
-        json: true,
-      }) as Record<string, string>;
+      const decodedPayload = jwtDecode(params.messageAuth) as JwtPayload;
 
       if (decodedPayload.act !== "chat_message") {
         this.client.logger.error(
