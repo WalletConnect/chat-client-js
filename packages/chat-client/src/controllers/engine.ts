@@ -78,6 +78,19 @@ export class ChatEngine extends IChatEngine {
     return this.client.identityKeys.registerIdentity({ accountId, onSign });
   };
 
+  private deriveThreadResponseTopic = async (
+    pubkeyY: string,
+    pubkeyX: string
+  ) => {
+    const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
+      pubkeyY,
+      pubkeyX
+    );
+    const symKeyI = this.client.core.crypto.keychain.get(topicSymKeyI);
+    const responseTopic = hashKey(symKeyI);
+    return { symKeyI, responseTopic };
+  };
+
   public unregisterIdentity: IChatEngine["unregisterIdentity"] = async ({
     account,
   }) => {
@@ -202,7 +215,7 @@ export class ChatEngine extends IChatEngine {
           account,
         });
         const signedSyncMessage = await onSign(syncMessage);
-        console.log("Registering sync", account, signedSyncMessage);
+        this.client.logger.info("Registering sync", account, signedSyncMessage);
         await this.client.syncClient.register({
           account,
           signature: signedSyncMessage,
@@ -270,7 +283,10 @@ export class ChatEngine extends IChatEngine {
     const pubkeyY = await this.client.core.crypto.generateKeyPair();
     const privKeyY = this.client.core.crypto.keychain.get(pubkeyY);
 
-    console.log("invite > responderInvitePublicKey: ", inviteePublicKey);
+    this.client.logger.info(
+      "invite > responderInvitePublicKey: ",
+      inviteePublicKey
+    );
 
     const identityKeyPub = await this.client.identityKeys.getIdentity({
       account: inviterAccount,
@@ -282,7 +298,7 @@ export class ChatEngine extends IChatEngine {
     const inviteTopic = hashKey(pubkeyX);
     this.client.core.crypto.keychain.set(inviteTopic, pubkeyY);
 
-    console.log("invite > inviteTopic: ", inviteTopic);
+    this.client.logger.info("invite > inviteTopic: ", inviteTopic);
 
     const iat = Date.now();
     const inviteProposalPayload = {
@@ -301,24 +317,22 @@ export class ChatEngine extends IChatEngine {
       inviteProposalPayload
     );
 
-    // subscribe to response topic: topic R (response) = hash(symKey I)
-    // TODO: abstract this responseTopic derivation here and in onIncoming into reusable helper
-    const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
+    const { symKeyI, responseTopic } = await this.deriveThreadResponseTopic(
       pubkeyY,
       pubkeyX
     );
-    const symKeyI = this.client.core.crypto.keychain.get(topicSymKeyI);
-    const responseTopic = hashKey(symKeyI);
-    console.log("invite > symKeyI", symKeyI);
-    console.log("invite > subscribe > responseTopic:", responseTopic);
+    this.client.logger.info("invite > symKeyI", symKeyI);
+    this.client.logger.info(
+      "invite > subscribe > responseTopic:",
+      responseTopic
+    );
 
     // set the key for retrieval in `onInviteResponse`
     this.client.core.crypto.keychain.set(`${responseTopic}-pubkeyY`, pubkeyY);
 
+    // subscribe to response topic: topic R (response) = hash(symKey I)
     await this.client.core.relayer.subscribe(responseTopic);
 
-    // TODO: needed? persist invite
-    // await this.client.chatInvites.set(inviteId, completeInvite);
     // send invite encrypted with type 1 envelope to the invite topic including publicKey Y.
     const inviteId = await this.sendRequest(
       inviteTopic,
@@ -359,21 +373,19 @@ export class ChatEngine extends IChatEngine {
     const identityKeyPub = await this.client.identityKeys.getIdentity({
       account: invite.inviteeAccount,
     });
-    console.log(
+    this.client.logger.info(
       "accept > this.client.chatKeys.get('invitePublicKey'): ",
       keys.publicKey
     );
 
     const decodedInvitePubKey = invite.inviterPublicKey;
 
-    const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
+    const { symKeyI, responseTopic } = await this.deriveThreadResponseTopic(
       keys.publicKey,
       decodedInvitePubKey
     );
-    const symKeyI = this.client.core.crypto.keychain.get(topicSymKeyI);
-    const responseTopic = hashKey(symKeyI);
-    console.log("accept > symKeyI", symKeyI);
-    console.log("accept > responseTopic:", responseTopic);
+    this.client.logger.info("accept > symKeyI", symKeyI);
+    this.client.logger.info("accept > responseTopic:", responseTopic);
 
     // accepts the invite and generates a keyPair Z for chat thread.
     const publicKeyZ = await this.client.core.crypto.generateKeyPair();
@@ -385,7 +397,7 @@ export class ChatEngine extends IChatEngine {
     );
 
     const symKeyT = this.client.core.crypto.keychain.get(topicSymKeyT);
-    console.log("accept > symKeyT:", symKeyT);
+    this.client.logger.info("accept > symKeyT:", symKeyT);
 
     // Thread topic is derived as the hash of the symKey T.
     const chatThreadTopic = hashKey(symKeyT);
@@ -414,7 +426,7 @@ export class ChatEngine extends IChatEngine {
     // Subscribe to the chat thread topic.
     await this.client.core.relayer.subscribe(chatThreadTopic);
 
-    console.log("accept > chatThreadTopic:", chatThreadTopic);
+    this.client.logger.info("accept > chatThreadTopic:", chatThreadTopic);
 
     await this.client.chatThreads.set(chatThreadTopic, {
       topic: chatThreadTopic,
@@ -430,7 +442,7 @@ export class ChatEngine extends IChatEngine {
       });
     }
 
-    console.log("accept > chatThreads.set:", chatThreadTopic, {
+    this.client.logger.info("accept > chatThreads.set:", chatThreadTopic, {
       topic: chatThreadTopic,
       selfAccount: invite.inviteeAccount,
       peerAccount: invite.inviterAccount,
@@ -440,7 +452,7 @@ export class ChatEngine extends IChatEngine {
       status: "approved",
     });
 
-    console.log("accept > chatInvites.delete:", id);
+    this.client.logger.info("accept > chatInvites.delete:", id);
 
     return chatThreadTopic;
   };
@@ -453,14 +465,12 @@ export class ChatEngine extends IChatEngine {
     const invite = this.client.chatReceivedInvites.get(id.toString());
     const { publicKey } = this.client.chatKeys.get(invite.inviteeAccount);
 
-    const topicSymKeyI = await this.client.core.crypto.generateSharedKey(
+    const { responseTopic, symKeyI } = await this.deriveThreadResponseTopic(
       publicKey,
       invite.inviterPublicKey
     );
-    const symKeyI = this.client.core.crypto.keychain.get(topicSymKeyI);
-    const responseTopic = hashKey(symKeyI);
-    console.log("reject > symKeyI", symKeyI);
-    console.log("reject > responseTopic:", responseTopic);
+    this.client.logger.info("reject > symKeyI", symKeyI);
+    this.client.logger.info("reject > responseTopic:", responseTopic);
 
     await this.sendError(id, responseTopic, getSdkError("USER_REJECTED"));
 
@@ -473,7 +483,7 @@ export class ChatEngine extends IChatEngine {
       status: "rejected",
     });
 
-    console.log("reject > chatInvites.delete:", id);
+    this.client.logger.info("reject > chatInvites.delete:", id);
   };
 
   public sendMessage: IChatEngine["sendMessage"] = async (payload) => {
@@ -516,15 +526,11 @@ export class ChatEngine extends IChatEngine {
     });
     this.client.core.history.set(messagePayload.topic, jsonRpcPayload);
 
-    console.log("----- SEND MSG");
-
     // Set message in ChatMessages store, keyed by thread topic T.
     this.setMessage(messagePayload.topic, messagePayload);
   };
 
   public ping: IChatEngine["ping"] = async ({ topic }) => {
-    // this.isInitialized();
-    // await this.isValidPing(params);
     if (this.client.chatThreads.keys.includes(topic)) {
       const id = await this.sendRequest(topic, "wc_chatPing", {});
       const { done, resolve, reject } = createDelayedPromise<void>();
@@ -537,7 +543,6 @@ export class ChatEngine extends IChatEngine {
   };
 
   public leave: IChatEngine["leave"] = async ({ topic }) => {
-    // this.isInitialized();
     if (this.client.chatThreads.keys.includes(topic)) {
       await this.sendRequest(topic, "wc_chatLeave", {});
       await this.leaveChat(topic);
@@ -600,10 +605,10 @@ export class ChatEngine extends IChatEngine {
       account ?? this.currentAccount
     );
 
-    console.log(">>>>>>>>> selfInvitePublicKey:", publicKey);
+    this.client.logger.info(">>>>>>>>> selfInvitePublicKey:", publicKey);
 
     const selfInviteTopic = hashKey(publicKey);
-    console.log(">>>>>>>>> selfInviteTopic:", selfInviteTopic);
+    this.client.logger.info(">>>>>>>>> selfInviteTopic:", selfInviteTopic);
 
     if (!this.client.core.relayer.subscriber.topics.includes(selfInviteTopic)) {
       await this.client.core.relayer.subscribe(selfInviteTopic);
@@ -702,7 +707,6 @@ export class ChatEngine extends IChatEngine {
 
   // ---------- Relay Event Handlers ----------------------------------- //
 
-  // TODO (post-MVP): Peer rejects invite
   protected onIncomingInvite: IChatEngine["onIncomingInvite"] = async (
     inviteTopic,
     payload,
@@ -759,7 +763,7 @@ export class ChatEngine extends IChatEngine {
         params: invitePayload,
       });
     } catch (err: any) {
-      console.log({ err });
+      this.client.logger.error({ err });
       await this.sendError(payload.id, inviteTopic, err);
       this.client.logger.error(err);
     }
@@ -793,8 +797,11 @@ export class ChatEngine extends IChatEngine {
 
       // Thread topic is derived as the hash of the symKey T.
       const chatThreadTopic = hashKey(symKeyT);
-      console.log("onInviteResponse > symKeyT:", symKeyT);
-      console.log("onInviteResponse > chatThreadTopic: ", chatThreadTopic);
+      this.client.logger.info("onInviteResponse > symKeyT:", symKeyT);
+      this.client.logger.info(
+        "onInviteResponse > chatThreadTopic: ",
+        chatThreadTopic
+      );
 
       // Subscribe to the chat thread topic.
       await this.client.core.relayer.subscribe(chatThreadTopic);
@@ -816,13 +823,16 @@ export class ChatEngine extends IChatEngine {
         });
       }
 
-      console.log("onInviteResponse > chatThreads.set: ", chatThreadTopic, {
-        topic: chatThreadTopic,
-        selfAccount: inviterAccount,
-        peerAccount: inviteeAccount,
-      });
+      this.client.logger.info(
+        "onInviteResponse > chatThreads.set: ",
+        chatThreadTopic,
+        {
+          topic: chatThreadTopic,
+          selfAccount: inviterAccount,
+          peerAccount: inviteeAccount,
+        }
+      );
 
-      //TODO: Delete after 3 settled invites
       await this.client.chatSentInvites.update(topic, {
         status: "approved",
       });
@@ -967,7 +977,6 @@ export class ChatEngine extends IChatEngine {
   ) => {
     const { id } = payload;
     try {
-      // this.isValidPing({ topic });
       await this.sendResult<"wc_chatPing">(id, topic, true);
       this.client.emit("chat_ping", { id, topic });
     } catch (err: any) {
