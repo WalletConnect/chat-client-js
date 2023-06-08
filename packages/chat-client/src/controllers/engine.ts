@@ -45,6 +45,7 @@ import {
   ZMessage,
 } from "../types";
 import { engineEvent } from "../utils/engineUtil";
+import { HistoryClient } from "@walletconnect/history";
 
 export class ChatEngine extends IChatEngine {
   private initialized = false;

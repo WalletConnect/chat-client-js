@@ -1,4 +1,4 @@
-import { Core, Store } from "@walletconnect/core";
+import { Core, RELAYER_DEFAULT_RELAY_URL, Store } from "@walletconnect/core";
 import pino from "pino";
 import {
   generateChildLogger,
@@ -26,6 +26,7 @@ import type {
 } from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
 import { hashKey } from "@walletconnect/utils";
+import { HistoryClient } from "@walletconnect/history";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
@@ -369,6 +370,17 @@ export class ChatClient extends IChatClient {
         if (!thread) return;
         this.core.crypto.setSymKey(thread.symKey, thread.topic);
 
+        if (!this.chatMessages.getAll({ topic: thread.topic }).length) {
+          const history = new HistoryClient(this.core);
+          history
+            .getMessages({
+              topic: thread.topic,
+              direction: "backward",
+              messageCount: 200,
+            })
+            .then((messages) => messages.injectIntoRelayer());
+        }
+
         if (this.core.relayer.subscriber.topics.includes(thread.topic)) {
           return;
         }
@@ -386,6 +398,28 @@ export class ChatClient extends IChatClient {
         this.chatReceivedInvites.update(id.toString(), { status: "approved" });
       }
     );
+
+    const historyFetchedStores = [
+      CHAT_THREADS_CONTEXT,
+      CHAT_SENT_INVITES_CONTEXT,
+    ];
+
+    const stores = this.syncClient.storeMap
+      .getAll({ account })
+      .filter((store) => {
+        return historyFetchedStores.includes(store.key);
+      });
+
+    stores.forEach((store) => {
+      const history = new HistoryClient(this.core);
+      history
+        .getMessages({
+          topic: store.topic,
+          direction: "backward",
+          messageCount: 200,
+        })
+        .then((messages) => messages.injectIntoRelayer());
+    });
 
     await this.chatSentInvites.init();
     await this.chatReceivedInvitesStatus.init();
@@ -409,6 +443,12 @@ export class ChatClient extends IChatClient {
         });
       }
 
+      const historyClient = new HistoryClient(this.core);
+      await historyClient.registerTags({
+        relayUrl: this.core.relayUrl || RELAYER_DEFAULT_RELAY_URL,
+        tags: ["2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007"],
+      });
+
       await this.core.start();
       await this.chatMessages.init();
       await this.chatReceivedInvites.init();
@@ -417,6 +457,7 @@ export class ChatClient extends IChatClient {
       await this.chatContacts.init();
       await this.identityKeys.init();
       await this.engine.init();
+
       this.logger.info(`ChatClient Initialization Success`);
     } catch (error: any) {
       this.logger.info(`ChatClient Initialization Failure`);
