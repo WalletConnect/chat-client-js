@@ -449,7 +449,7 @@ export class ChatClient extends IChatClient {
       const historyClient = new HistoryClient(this.core);
       await historyClient.registerTags({
         relayUrl: this.core.relayUrl || RELAYER_DEFAULT_RELAY_URL,
-        tags: ["2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007"],
+        tags: ["2000", "2001", "2002", "2003", "2004", "2005"],
       });
 
       await this.core.start();
