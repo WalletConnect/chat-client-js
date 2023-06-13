@@ -45,7 +45,6 @@ import {
   ZMessage,
 } from "../types";
 import { engineEvent } from "../utils/engineUtil";
-import { HistoryClient } from "@walletconnect/history";
 
 export class ChatEngine extends IChatEngine {
   private initialized = false;
@@ -76,7 +75,9 @@ export class ChatEngine extends IChatEngine {
     accountId: string,
     onSign: (message: string) => Promise<string>
   ): Promise<string> => {
-    return this.client.identityKeys.registerIdentity({ accountId, onSign });
+    return encodeEd25519Key(
+      await this.client.identityKeys.registerIdentity({ accountId, onSign })
+    );
   };
 
   private deriveThreadResponseTopic = async (

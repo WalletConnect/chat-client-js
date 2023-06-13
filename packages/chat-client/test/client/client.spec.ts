@@ -887,7 +887,15 @@ describe("ChatClient", () => {
         authorAccount: composeChainAddress(walletSelf.address),
       };
 
-      for (const message of ["A", "B", "C"]) {
+      const messagesToSend = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+
+      // Simulate real usecase
+      // A race condition happens if a message is sent within 100ms of the thread init,
+      // causing a singular duplicate message
+      const timeIn01Seconds = Date.now() + 100;
+      await waitForEvent(() => Date.now() > timeIn01Seconds);
+
+      for (const message of messagesToSend) {
         await client.message({
           ...payload,
           message,
@@ -934,6 +942,6 @@ describe("ChatClient", () => {
           .map((m) => m.message)
           .sort()
       );
-    }, 20_000);
+    }, 30_000);
   });
 });

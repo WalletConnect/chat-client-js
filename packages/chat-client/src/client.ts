@@ -370,16 +370,19 @@ export class ChatClient extends IChatClient {
         if (!thread) return;
         this.core.crypto.setSymKey(thread.symKey, thread.topic);
 
-        if (!this.chatMessages.getAll({ topic: thread.topic }).length) {
-          const history = new HistoryClient(this.core);
-          history
-            .getMessages({
-              topic: thread.topic,
-              direction: "backward",
-              messageCount: 200,
-            })
-            .then((messages) => messages.injectIntoRelayer());
-        }
+        const history = new HistoryClient(this.core);
+        new Promise((resolve) => {
+          if (!this.chatMessages.getAll({ topic: thread.topic }).length) {
+            history
+              .getMessages({
+                topic: thread.topic,
+                direction: "backward",
+                messageCount: 200,
+              })
+              .then((messages) => messages.injectIntoRelayer())
+              .then(resolve);
+          }
+        });
 
         if (this.core.relayer.subscriber.topics.includes(thread.topic)) {
           return;
