@@ -27,6 +27,7 @@ import type {
 import { IdentityKeys } from "@walletconnect/identity-keys";
 import { hashKey } from "@walletconnect/utils";
 import { HistoryClient } from "@walletconnect/history";
+import { fetchAndInjectHistory } from "./utils/historyUtil";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
@@ -36,6 +37,7 @@ export class ChatClient extends IChatClient {
 
   public core: ICore;
   public syncClient: ISyncClient | undefined;
+  public historyClient: HistoryClient;
   public events = new EventEmitter();
   public logger: IChatClient["logger"];
   public chatSentInvites: IChatClient["chatSentInvites"];
@@ -76,6 +78,8 @@ export class ChatClient extends IChatClient {
     this.keyserverUrl = opts?.keyserverUrl ?? KEYSERVER_URL;
 
     this.core = opts?.core || new Core(opts);
+    this.historyClient = new HistoryClient(this.core);
+
     this.logger = generateChildLogger(logger, this.name);
     this.chatSentInvites = new Store(
       this.core,
@@ -370,16 +374,10 @@ export class ChatClient extends IChatClient {
         if (!thread) return;
         this.core.crypto.setSymKey(thread.symKey, thread.topic);
 
-        const history = new HistoryClient(this.core);
         new Promise((resolve) => {
           if (!this.chatMessages.getAll({ topic: thread.topic }).length) {
-            history
-              .getMessages({
-                topic: thread.topic,
-                direction: "backward",
-                messageCount: 200,
-              })
-              .then((messages) => messages.injectIntoRelayer())
+            fetchAndInjectHistory(thread.topic, "thread", this.historyClient)
+              .catch((e) => this.logger.error(e.message))
               .then(resolve);
           }
         });
@@ -414,14 +412,9 @@ export class ChatClient extends IChatClient {
       });
 
     stores.forEach((store) => {
-      const history = new HistoryClient(this.core);
-      history
-        .getMessages({
-          topic: store.topic,
-          direction: "backward",
-          messageCount: 200,
-        })
-        .then((messages) => messages.injectIntoRelayer());
+      fetchAndInjectHistory(store.topic, store.key, this.historyClient).catch(
+        (e) => this.logger.error(e.message)
+      );
     });
 
     await this.chatSentInvites.init();
@@ -434,6 +427,7 @@ export class ChatClient extends IChatClient {
 
   private async initialize() {
     this.logger.trace(`Initialized`);
+
     try {
       // Use active account to init stores
       if (this.syncClient && this.syncClient.signatures.length > 0) {
@@ -446,8 +440,7 @@ export class ChatClient extends IChatClient {
         });
       }
 
-      const historyClient = new HistoryClient(this.core);
-      await historyClient.registerTags({
+      await this.historyClient.registerTags({
         relayUrl: this.core.relayUrl || RELAYER_DEFAULT_RELAY_URL,
         tags: ["2000", "2001", "2002", "2003", "2004", "2005"],
       });
