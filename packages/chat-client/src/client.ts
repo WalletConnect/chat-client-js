@@ -1,4 +1,4 @@
-import { Core, Store } from "@walletconnect/core";
+import { Core, RELAYER_DEFAULT_RELAY_URL, Store } from "@walletconnect/core";
 import pino from "pino";
 import {
   generateChildLogger,
@@ -26,6 +26,8 @@ import type {
 } from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
 import { hashKey } from "@walletconnect/utils";
+import { HistoryClient } from "@walletconnect/history";
+import { fetchAndInjectHistory } from "./utils/historyUtil";
 
 export class ChatClient extends IChatClient {
   public readonly name = "chatClient";
@@ -35,6 +37,7 @@ export class ChatClient extends IChatClient {
 
   public core: ICore;
   public syncClient: ISyncClient | undefined;
+  public historyClient: HistoryClient;
   public events = new EventEmitter();
   public logger: IChatClient["logger"];
   public chatSentInvites: IChatClient["chatSentInvites"];
@@ -75,6 +78,8 @@ export class ChatClient extends IChatClient {
     this.keyserverUrl = opts?.keyserverUrl ?? KEYSERVER_URL;
 
     this.core = opts?.core || new Core(opts);
+    this.historyClient = new HistoryClient(this.core);
+
     this.logger = generateChildLogger(logger, this.name);
     this.chatSentInvites = new Store(
       this.core,
@@ -369,6 +374,14 @@ export class ChatClient extends IChatClient {
         if (!thread) return;
         this.core.crypto.setSymKey(thread.symKey, thread.topic);
 
+        new Promise((resolve) => {
+          if (!this.chatMessages.getAll({ topic: thread.topic }).length) {
+            fetchAndInjectHistory(thread.topic, "thread", this.historyClient)
+              .catch((e) => this.logger.error(e.message))
+              .then(resolve);
+          }
+        });
+
         if (this.core.relayer.subscriber.topics.includes(thread.topic)) {
           return;
         }
@@ -387,6 +400,23 @@ export class ChatClient extends IChatClient {
       }
     );
 
+    const historyFetchedStores = [
+      CHAT_THREADS_CONTEXT,
+      CHAT_SENT_INVITES_CONTEXT,
+    ];
+
+    const stores = this.syncClient.storeMap
+      .getAll({ account })
+      .filter((store) => {
+        return historyFetchedStores.includes(store.key);
+      });
+
+    stores.forEach((store) => {
+      fetchAndInjectHistory(store.topic, store.key, this.historyClient).catch(
+        (e) => this.logger.error(e.message)
+      );
+    });
+
     await this.chatSentInvites.init();
     await this.chatReceivedInvitesStatus.init();
     await this.chatThreads.init();
@@ -397,6 +427,7 @@ export class ChatClient extends IChatClient {
 
   private async initialize() {
     this.logger.trace(`Initialized`);
+
     try {
       // Use active account to init stores
       if (this.syncClient && this.syncClient.signatures.length > 0) {
@@ -409,6 +440,11 @@ export class ChatClient extends IChatClient {
         });
       }
 
+      await this.historyClient.registerTags({
+        relayUrl: this.core.relayUrl || RELAYER_DEFAULT_RELAY_URL,
+        tags: ["2000", "2001", "2002", "2003", "2004", "2005"],
+      });
+
       await this.core.start();
       await this.chatMessages.init();
       await this.chatReceivedInvites.init();
@@ -417,6 +453,7 @@ export class ChatClient extends IChatClient {
       await this.chatContacts.init();
       await this.identityKeys.init();
       await this.engine.init();
+
       this.logger.info(`ChatClient Initialization Success`);
     } catch (error: any) {
       this.logger.info(`ChatClient Initialization Failure`);

@@ -5,6 +5,7 @@ import { IChatEngine } from "./engine";
 import { z } from "zod";
 import { ISyncClient, SyncStore } from "@walletconnect/sync-client";
 import { IdentityKeys } from "@walletconnect/identity-keys";
+import { HistoryClient } from "@walletconnect/history";
 
 export const ZAccount = z.string().regex(/.*:.*:.*/, {
   message: `Must be valid address with chain specifier.`,
@@ -148,6 +149,7 @@ export abstract class IChatClient {
   public abstract readonly keyserverUrl: string;
 
   public abstract syncClient: ISyncClient | undefined;
+  public abstract historyClient: HistoryClient;
 
   public abstract core: ICore;
   public abstract events: EventEmitter;

@@ -831,4 +831,117 @@ describe("ChatClient", () => {
       );
     }, 15000);
   });
+
+  describe("History fetching", () => {
+    it("Fetches and injects history", async () => {
+      let peerReceivedInvite = false;
+      let peerJoinedChat = false;
+      let threadTopic = "";
+
+      const walletSelf = Wallet.createRandom();
+      const walletPeer = Wallet.createRandom();
+
+      await client.register({
+        account: composeChainAddress(walletSelf.address),
+        onSign: (message) => walletSelf.signMessage(message),
+      });
+
+      await peer.register({
+        account: composeChainAddress(walletPeer.address),
+        onSign: (message) => walletPeer.signMessage(message),
+      });
+
+      peer.on("chat_invite", async (args) => {
+        const { id } = args;
+        console.log("chat_invite:", args);
+        const chatThreadTopic = await peer.accept({ id });
+        expect(chatThreadTopic).toBeDefined();
+        threadTopic = chatThreadTopic;
+        peerReceivedInvite = true;
+      });
+
+      client.on("chat_invite_accepted", async (args) => {
+        const { topic } = args;
+        console.log("chat_invite_accepted:", args);
+        expect(topic).toBeDefined();
+        peerJoinedChat = true;
+      });
+
+      const invite: ChatClientTypes.Invite = {
+        message: "hey let's chat",
+        inviterAccount: composeChainAddress(walletSelf.address),
+        inviteeAccount: composeChainAddress(walletPeer.address),
+        inviteePublicKey: await client.resolve({
+          account: composeChainAddress(walletPeer.address),
+        }),
+      };
+
+      const inviteId = await client.invite(invite);
+
+      await waitForEvent(() => peerReceivedInvite && peerJoinedChat);
+
+      expect(inviteId).toBeDefined();
+
+      const payload = {
+        topic: threadTopic,
+        authorAccount: composeChainAddress(walletSelf.address),
+      };
+
+      const messagesToSend = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+
+      // Simulate real usecase
+      // A race condition happens if a message is sent within 100ms of the thread init,
+      // causing a singular duplicate message
+      const timeIn01Seconds = Date.now() + 100;
+      await waitForEvent(() => Date.now() > timeIn01Seconds);
+
+      for (const message of messagesToSend) {
+        await client.message({
+          ...payload,
+          message,
+          timestamp: Date.now(),
+        });
+      }
+
+      const core = new Core({ projectId: opts.projectId });
+      const syncClient = await SyncClient.init({
+        projectId: opts.projectId,
+        core,
+      });
+      const clientSyncPeer = await ChatClient.init({
+        ...opts,
+        core,
+        syncClient,
+        SyncStoreController: SyncStore,
+      });
+
+      await clientSyncPeer.register({
+        account: composeChainAddress(walletSelf.address),
+        onSign: (message) => walletSelf.signMessage(message),
+      });
+
+      const timeIn15Seconds = Date.now() + 15_000;
+      await waitForEvent(() => Date.now() > timeIn15Seconds);
+
+      expect(clientSyncPeer.chatThreads.getAll()).toEqual(
+        client.chatThreads.getAll()
+      );
+
+      expect(clientSyncPeer.chatMessages.length).toEqual(
+        client.chatMessages.length
+      );
+
+      expect(
+        clientSyncPeer
+          .getMessages({ topic: threadTopic })
+          .map((m) => m.message)
+          .sort()
+      ).toEqual(
+        client
+          .getMessages({ topic: threadTopic })
+          .map((m) => m.message)
+          .sort()
+      );
+    }, 30_000);
+  });
 });

@@ -75,7 +75,9 @@ export class ChatEngine extends IChatEngine {
     accountId: string,
     onSign: (message: string) => Promise<string>
   ): Promise<string> => {
-    return this.client.identityKeys.registerIdentity({ accountId, onSign });
+    return encodeEd25519Key(
+      await this.client.identityKeys.registerIdentity({ accountId, onSign })
+    );
   };
 
   private deriveThreadResponseTopic = async (
