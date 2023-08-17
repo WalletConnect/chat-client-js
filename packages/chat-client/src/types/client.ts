@@ -1,11 +1,11 @@
-import { ICore, IStore, CoreTypes } from "@walletconnect/types";
-import EventEmitter from "events";
-import { Logger } from "@walletconnect/logger";
-import { IChatEngine } from "./engine";
-import { z } from "zod";
-import { ISyncClient, SyncStore } from "@walletconnect/sync-client";
-import { IdentityKeys } from "@walletconnect/identity-keys";
 import { HistoryClient } from "@walletconnect/history";
+import { IdentityKeys } from "@walletconnect/identity-keys";
+import { Logger } from "@walletconnect/logger";
+import { ISyncClient, SyncStore } from "@walletconnect/sync-client";
+import { CoreTypes, ICore, IStore } from "@walletconnect/types";
+import EventEmitter from "events";
+import { z } from "zod";
+import { IChatEngine } from "./engine";
 
 export const ZAccount = z.string().regex(/.*:.*:.*/, {
   message: `Must be valid address with chain specifier.`,
@@ -87,6 +87,7 @@ export declare namespace ChatClientTypes {
   interface Options extends CoreTypes.Options {
     core?: ICore;
     keyserverUrl?: string;
+    identityKeys?: IdentityKeys;
     syncClient: ISyncClient;
     SyncStoreController: typeof SyncStore;
     projectId: string;

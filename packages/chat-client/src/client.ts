@@ -1,32 +1,32 @@
 import { Core, RELAYER_DEFAULT_RELAY_URL, Store } from "@walletconnect/core";
-import pino from "pino";
 import {
   generateChildLogger,
   getDefaultLoggerOptions,
 } from "@walletconnect/logger";
 import { ICore } from "@walletconnect/types";
 import EventEmitter from "events";
+import pino from "pino";
 import {
   CHAT_CLIENT_STORAGE_PREFIX,
-  CHAT_MESSAGES_CONTEXT,
-  CHAT_THREADS_CONTEXT,
   CHAT_CONTACTS_CONTEXT,
-  CHAT_RECEIVED_INVITES_CONTEXT,
-  CHAT_SENT_INVITES_CONTEXT,
   CHAT_KEYS_CONTEXT,
-  KEYSERVER_URL,
+  CHAT_MESSAGES_CONTEXT,
+  CHAT_RECEIVED_INVITES_CONTEXT,
   CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
+  CHAT_SENT_INVITES_CONTEXT,
+  CHAT_THREADS_CONTEXT,
+  KEYSERVER_URL,
 } from "./constants";
 
-import { ChatEngine } from "./controllers";
-import { ChatClientTypes, IChatClient, InviteKeychain } from "./types";
+import { HistoryClient } from "@walletconnect/history";
+import { IdentityKeys } from "@walletconnect/identity-keys";
 import type {
   ISyncClient,
   SyncStore as TSyncStore,
 } from "@walletconnect/sync-client";
-import { IdentityKeys } from "@walletconnect/identity-keys";
 import { hashKey } from "@walletconnect/utils";
-import { HistoryClient } from "@walletconnect/history";
+import { ChatEngine } from "./controllers";
+import { ChatClientTypes, IChatClient, InviteKeychain } from "./types";
 import { fetchAndInjectHistory } from "./utils/historyUtil";
 
 export class ChatClient extends IChatClient {
@@ -126,7 +126,7 @@ export class ChatClient extends IChatClient {
       CHAT_RECEIVED_INVITES_STATUS_CONTEXT,
       CHAT_CLIENT_STORAGE_PREFIX
     );
-    this.identityKeys = new IdentityKeys(this.core);
+    this.identityKeys = opts?.identityKeys ?? new IdentityKeys(this.core);
     this.engine = new ChatEngine(this);
   }
 
