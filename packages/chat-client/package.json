@@ -1,7 +1,7 @@
 {
   "name": "@walletconnect/chat-client",
   "description": "Chat Client for WalletConnect Protocol",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "author": "WalletConnect, Inc. <walletconnect.com>",
   "homepage": "https://github.com/walletconnect/walletconnect-monorepo/",
   "main": "dist/index.cjs.js",
@@ -34,7 +34,7 @@
     "@walletconnect/core": "^2.7.8",
     "@walletconnect/did-jwt": "^2.0.3",
     "@walletconnect/history": "^1.0.3",
-    "@walletconnect/identity-keys": "^0.1.7",
+    "@walletconnect/identity-keys": "0.1.5",
     "@walletconnect/jsonrpc-utils": "^1.0.6",
     "@walletconnect/logger": "^2.0.1",
     "@walletconnect/time": "^1.0.2",
