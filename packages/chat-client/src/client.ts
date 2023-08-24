@@ -421,6 +421,9 @@ export class ChatClient extends IChatClient {
     await this.chatReceivedInvitesStatus.init();
     await this.chatThreads.init();
     await this.chatKeys.init();
+
+    // JS Implementation event
+    this.emit("sync_stores_initialized", {});
   };
 
   // ---------- Private ----------------------------------------------- //
