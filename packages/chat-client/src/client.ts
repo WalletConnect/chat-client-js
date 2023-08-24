@@ -423,7 +423,7 @@ export class ChatClient extends IChatClient {
     await this.chatKeys.init();
 
     // JS Implementation event
-    this.events.emit("sync_stores_initialized");
+    this.emit("sync_stores_initialized", {});
   };
 
   // ---------- Private ----------------------------------------------- //
