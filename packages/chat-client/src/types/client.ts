@@ -138,7 +138,7 @@ export declare namespace ChatClientTypes {
     chat_left: Omit<BaseEventArgs, "params">;
     chat_invite_accepted: { invite: SentInvite; topic: string; id: number };
     chat_invite_rejected: { invite: SentInvite; id: number; topic: string };
-    sync_stores_initialized: Record<string, never>; // empty obnject
+    sync_stores_initialized: Record<string, never>; // empty object
   }
 }
 
