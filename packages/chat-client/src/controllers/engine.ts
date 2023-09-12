@@ -76,7 +76,12 @@ export class ChatEngine extends IChatEngine {
     onSign: (message: string) => Promise<string>
   ): Promise<string> => {
     return encodeEd25519Key(
-      await this.client.identityKeys.registerIdentity({ accountId, onSign })
+      await this.client.identityKeys.registerIdentity({
+        accountId,
+        onSign,
+        domain: "",
+        statement: "",
+      })
     );
   };
 
